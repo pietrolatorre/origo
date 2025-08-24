@@ -2,7 +2,7 @@
  * TextInput component for text input and analysis controls
  */
 
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { Send, Trash2, Loader2 } from 'lucide-react';
 
 interface TextInputProps {
@@ -21,6 +21,18 @@ export const TextInput: React.FC<TextInputProps> = ({
   const [text, setText] = useState('');
   const [wordCount, setWordCount] = useState(0);
   const [charCount, setCharCount] = useState(0);
+
+  // Sample text for demonstration
+  const sampleText = `Artificial intelligence has revolutionized numerous industries and transformed how we approach complex problems. Machine learning algorithms can now process vast amounts of data with unprecedented accuracy and speed. These systems demonstrate remarkable capabilities in pattern recognition, natural language processing, and predictive analytics. The integration of AI technologies continues to expand across various sectors, including healthcare, finance, and transportation. As these systems become more sophisticated, they enable innovative solutions that were previously unimaginable. The potential applications seem limitless, offering exciting possibilities for the future.`;
+
+  // Initialize with sample text if no text is provided
+  useEffect(() => {
+    if (!text) {
+      setText(sampleText);
+      setCharCount(sampleText.length);
+      setWordCount(sampleText.trim().split(/\s+/).length);
+    }
+  }, [sampleText]);
 
   const handleTextChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newText = e.target.value;
@@ -69,7 +81,7 @@ export const TextInput: React.FC<TextInputProps> = ({
       <div className="input-container">
         <textarea
           className={`text-input ${error ? 'error' : ''} ${isOverLimit ? 'over-limit' : ''}`}
-          placeholder="Enter English text here for AI detection analysis...\n\nMinimum 10 characters required. The analysis will examine:\n• Perplexity patterns using GPT-2\n• Sentence structure and variation\n• N-gram repetition and similarity\n• Semantic coherence patterns\n\nPress Ctrl+Enter to analyze quickly."
+          placeholder="Sample text loaded for demonstration. Replace with your own text for AI detection analysis...\n\nMinimum 10 characters required. The analysis will examine:\n• Perplexity patterns using GPT-2\n• Sentence structure and variation\n• N-gram repetition and similarity\n• Semantic coherence patterns\n\nPress Ctrl+Enter to analyze quickly."
           value={text}
           onChange={handleTextChange}
           onKeyDown={handleKeyDown}

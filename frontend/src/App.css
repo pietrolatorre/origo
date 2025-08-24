@@ -13,9 +13,13 @@
 }
 
 .container {
-  max-width: 1200px;
+  max-width: 1000px;
   margin: 0 auto;
-  padding: 0 1rem;
+  padding: 0 1.5rem;
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
 }
 
 /* Header Styles */
@@ -71,6 +75,8 @@
   padding: 2rem;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
   margin-bottom: 2rem;
+  width: 100%;
+  max-width: 900px;
 }
 
 .input-header {
@@ -231,6 +237,8 @@
   border-radius: 12px;
   box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
   overflow: hidden;
+  width: 100%;
+  max-width: 900px;
 }
 
 .results-section {
@@ -930,11 +938,18 @@
 /* Responsive Design */
 @media (max-width: 768px) {
   .container {
-    padding: 0 0.5rem;
+    padding: 0 1rem;
+    max-width: 100%;
   }
   
   .text-input-section {
     padding: 1.5rem;
+    margin-bottom: 1.5rem;
+    border-radius: 8px;
+  }
+  
+  .analysis-results {
+    border-radius: 8px;
   }
   
   .input-header {
@@ -943,9 +958,21 @@
     gap: 1rem;
   }
   
+  .text-stats {
+    flex-wrap: wrap;
+  }
+  
   .control-buttons {
     width: 100%;
     justify-content: space-between;
+    gap: 0.75rem;
+  }
+  
+  .btn {
+    flex: 1;
+    min-width: 0;
+    font-size: 0.875rem;
+    padding: 0.625rem 1rem;
   }
   
   .section-content {
@@ -959,10 +986,12 @@
   .overall-score {
     flex-direction: column;
     text-align: center;
+    gap: 1.5rem;
   }
   
   .metrics-grid {
     grid-template-columns: 1fr;
+    gap: 1rem;
   }
   
   .highlight-controls {
@@ -981,5 +1010,9 @@
   
   .search-box {
     max-width: none;
+  }
+  
+  .main-content {
+    padding: 1rem 0;
   }
 }

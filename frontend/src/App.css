@@ -386,6 +386,31 @@ body {
   border-color: #1a202c;
 }
 
+.tab-button.export-button {
+  background: #10b981;
+  color: white;
+  border-color: #10b981;
+  margin-left: auto;
+}
+
+.tab-button.export-button:hover {
+  background: #059669;
+  border-color: #059669;
+}
+
+/* Results limit notice */
+.results-limit-notice {
+  text-align: center;
+  padding: 1rem;
+  margin-top: 1rem;
+  background: #f1f5f9;
+  border-radius: 6px;
+  color: #64748b;
+  font-size: 0.875rem;
+  font-style: italic;
+  border: 1px solid #e2e8f0;
+}
+
 .tab-content {
   padding: 2rem;
 }

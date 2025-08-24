@@ -3,7 +3,7 @@
  */
 
 import React, { useState } from 'react';
-import { BarChart3, FileText, List, Type, User, Bot } from 'lucide-react';
+import { BarChart3, FileText, List, Type, User, Bot, Download } from 'lucide-react';
 import type { AnalysisResult } from '../types/analysis';
 import WordTable from './WordTable';
 import { MetricsBreakdown } from './MetricsBreakdown';
@@ -24,19 +24,82 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({ result }) => {
 
   const isSignificantScore = (score: number): boolean => score >= 0.4;
 
-  // Filter paragraphs with significant scores (yellow/red)
-  const significantParagraphs = result.paragraphs.filter(p => isSignificantScore(p.score));
+  // Filter and sort paragraphs with significant scores (yellow/red) - sorted by score descending
+  const significantParagraphs = result.paragraphs
+    .filter(p => isSignificantScore(p.score))
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 10); // Show only top 10
 
-  // Get all sentences with significant scores, sorted by score descending
+  // Get all sentences with significant scores, sorted by score descending, limited to top 10
   const significantSentences = result.paragraphs
     .flatMap(p => p.sentences || [])
     .filter(s => isSignificantScore(s.score))
-    .sort((a, b) => b.score - a.score);
+    .sort((a, b) => b.score - a.score)
+    .slice(0, 10); // Show only top 10
 
-  // Filter words with significant scores
+  // Filter words with significant scores, sorted by score descending, limited to top 10
   const significantWords = (result.word_analysis?.unique_words || [])
     .filter(w => isSignificantScore(w.average_score))
-    .sort((a, b) => b.average_score - a.average_score);
+    .sort((a, b) => b.average_score - a.average_score)
+    .slice(0, 10); // Show only top 10
+
+  const generatePDFReport = async () => {
+    try {
+      // Get complete analysis data (not limited to 10)
+      const allSignificantParagraphs = result.paragraphs
+        .filter(p => isSignificantScore(p.score))
+        .sort((a, b) => b.score - a.score);
+      
+      const allSignificantSentences = result.paragraphs
+        .flatMap(p => p.sentences || [])
+        .filter(s => isSignificantScore(s.score))
+        .sort((a, b) => b.score - a.score);
+      
+      const allSignificantWords = (result.word_analysis?.unique_words || [])
+        .filter(w => isSignificantScore(w.average_score))
+        .sort((a, b) => b.average_score - a.average_score);
+
+      const reportData = {
+        overview: {
+          overall_score: result.overall_score,
+          global_scores: result.global_scores,
+          metadata: result.analysis_metadata
+        },
+        paragraphs: allSignificantParagraphs,
+        sentences: allSignificantSentences,
+        words: allSignificantWords
+      };
+
+      // Call backend API to generate PDF
+      const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
+      const response = await fetch(`${API_BASE_URL}/export-pdf`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(reportData),
+      });
+
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.style.display = 'none';
+        a.href = url;
+        a.download = `origo-analysis-report-${new Date().toISOString().split('T')[0]}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+      } else {
+        console.error('Failed to generate PDF report');
+        alert('Failed to generate PDF report. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error generating PDF report:', error);
+      alert('Error generating PDF report. Please try again.');
+    }
+  };
 
   return (
     <>
@@ -76,6 +139,14 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({ result }) => {
             >
               <List size={16} />
               Word
+            </button>
+            <button
+              className="tab-button export-button"
+              onClick={generatePDFReport}
+              title="Export complete analysis report as PDF"
+            >
+              <Download size={16} />
+              Export Report
             </button>
           </div>
 
@@ -130,6 +201,11 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({ result }) => {
                         </div>
                       </div>
                     ))}
+                    {significantParagraphs.length === 10 && (
+                      <div className="results-limit-notice">
+                        Showing top 10 results. Export report for complete analysis.
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -153,6 +229,11 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({ result }) => {
                         </div>
                       </div>
                     ))}
+                    {significantSentences.length === 10 && (
+                      <div className="results-limit-notice">
+                        Showing top 10 results. Export report for complete analysis.
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
@@ -165,7 +246,14 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({ result }) => {
                     No significant elements in this analysis dimension show evidence of AI-generated content.
                   </div>
                 ) : (
-                  <WordTable words={significantWords.slice(0, 10)} hideControls={true} />
+                  <div className="words-tab">
+                    <WordTable words={significantWords} hideControls={true} />
+                    {significantWords.length === 10 && (
+                      <div className="results-limit-notice">
+                        Showing top 10 results. Export report for complete analysis.
+                      </div>
+                    )}
+                  </div>
                 )}
               </div>
             )}

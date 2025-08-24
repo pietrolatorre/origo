@@ -8,12 +8,14 @@ import asyncio
 from contextlib import asynccontextmanager
 from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List
 import uvicorn
 
 from analysis.scoring import score_fusion
 from utils.model_loader import model_loader
+from utils.pdf_generator import pdf_generator
 
 # Configure logging
 logging.basicConfig(
@@ -21,6 +23,13 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+class PDFReportRequest(BaseModel):
+    """Request model for PDF report generation"""
+    overview: Dict[str, Any] = Field(..., description="Overview data with scores and metadata")
+    paragraphs: List[Dict[str, Any]] = Field(..., description="Paragraph analysis data")
+    sentences: List[Dict[str, Any]] = Field(..., description="Sentence analysis data")
+    words: List[Dict[str, Any]] = Field(..., description="Word analysis data")
 
 class TextAnalysisRequest(BaseModel):
     """Request model for text analysis"""
@@ -160,6 +169,43 @@ async def analyze_text(request: TextAnalysisRequest):
         raise HTTPException(
             status_code=500,
             detail=f"Internal server error during analysis: {str(e)}"
+        )
+
+@app.post("/export-pdf")
+async def export_pdf_report(request: PDFReportRequest):
+    """
+    Generate and download a comprehensive PDF report
+    
+    This endpoint generates a detailed PDF report containing:
+    - Overview with overall scores and component breakdowns
+    - Paragraph analysis with AI probability scores
+    - Sentence analysis with detailed scoring
+    - Word analysis with frequency and impact data
+    """
+    try:
+        logger.info("Generating PDF report...")
+        
+        # Generate PDF report
+        pdf_buffer = await asyncio.get_event_loop().run_in_executor(
+            None,
+            pdf_generator.generate_report,
+            request.dict()
+        )
+        
+        logger.info("PDF report generated successfully")
+        
+        # Return PDF as streaming response
+        return StreamingResponse(
+            iter([pdf_buffer.getvalue()]),
+            media_type="application/pdf",
+            headers={"Content-Disposition": "attachment; filename=origo-analysis-report.pdf"}
+        )
+        
+    except Exception as e:
+        logger.error(f"Error generating PDF report: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"Error generating PDF report: {str(e)}"
         )
 
 @app.get("/weights")

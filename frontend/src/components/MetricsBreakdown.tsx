@@ -62,7 +62,6 @@ export const MetricsBreakdown: React.FC<MetricsBreakdownProps> = ({ scores }) =>
 
   return (
     <div className="metrics-breakdown">
-      <h4 className="breakdown-title">Analysis Dimensions</h4>
       <div className="metrics-grid">
         {Object.entries(scores).map(([metric, score]) => {
           const weight = DEFAULT_WEIGHTS[metric] || 0.25;

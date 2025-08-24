@@ -59,7 +59,7 @@ export const TextInput: React.FC<TextInputProps> = ({
   return (
     <div className="text-input-section">
       <div className="input-header">
-        <h2>Text Analysis</h2>
+        <h2>Input text</h2>
       </div>
 
       <div className="input-container">
@@ -90,7 +90,7 @@ export const TextInput: React.FC<TextInputProps> = ({
               className="btn btn-primary"
               onClick={handleAnalyze}
               disabled={isDisabled || isOverLimit}
-              title={isDisabled ? 'Enter at least 10 characters' : 'Analyze text (Ctrl+Enter)'}
+              title={isDisabled ? 'Enter at least 10 characters' : 'Launch analysis (Ctrl+Enter)'}
             >
               {isAnalyzing ? (
                 <>
@@ -100,7 +100,7 @@ export const TextInput: React.FC<TextInputProps> = ({
               ) : (
                 <>
                   <Send size={16} />
-                  Analyze Text
+                  Launch analysis
                 </>
               )}
             </button>

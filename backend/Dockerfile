@@ -26,15 +26,15 @@ RUN pip install --no-cache-dir --upgrade pip \
     && pip install --no-cache-dir -r requirements.txt \
     && pip list | grep -E "(torch|nvidia)" || echo "No NVIDIA dependencies found"
 
-# Download required NLTK data
-RUN python -c "import nltk; nltk.download('punkt', quiet=True); nltk.download('stopwords', quiet=True); nltk.download('punkt_tab', quiet=True)"
-
 # Copy application code
 COPY . .
 
 # Create non-root user for security
 RUN useradd -m appuser && chown -R appuser:appuser /app
 USER appuser
+
+# Download required NLTK data as the appuser
+RUN python -c "import nltk; nltk.download('punkt', quiet=True); nltk.download('stopwords', quiet=True); nltk.download('punkt_tab', quiet=True)"
 
 # Expose port
 EXPOSE 8000

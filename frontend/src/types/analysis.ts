@@ -38,6 +38,7 @@ export interface WordAnalysisResult {
 
 export interface AnalysisMetadata {
   text_length: number;
+  word_count: number;
   sentence_count: number;
   paragraph_count: number;
   weights_used?: Record<string, number>;

@@ -4,12 +4,19 @@
 
 import React from 'react';
 import { Brain, Zap, Repeat, Link } from 'lucide-react';
-import { ScoreDisplay } from './ScoreDisplay';
 import type { GlobalScores } from '../types/analysis';
 
 interface MetricsBreakdownProps {
   scores: GlobalScores;
 }
+
+// Default weights for analysis components (should match backend)
+const DEFAULT_WEIGHTS: Record<string, number> = {
+  perplexity: 0.4,
+  burstiness: 0.2,
+  ngram_similarity: 0.2,
+  semantic_coherence: 0.2
+};
 
 export const MetricsBreakdown: React.FC<MetricsBreakdownProps> = ({ scores }) => {
   const getMetricIcon = (metric: string) => {
@@ -47,36 +54,41 @@ export const MetricsBreakdown: React.FC<MetricsBreakdownProps> = ({ scores }) =>
     return explanations[metric] || 'Analysis metric for AI detection.';
   };
 
+  const getScoreColor = (score: number): string => {
+    if (score >= 0.7) return 'high';
+    if (score >= 0.4) return 'medium';
+    return 'low';
+  };
+
   return (
     <div className="metrics-breakdown">
-      <h4 className="breakdown-title">Component Scores</h4>
-      <div className="metrics-list">
-        {Object.entries(scores).map(([metric, score]) => (
-          <div key={metric} className="metric-item">
-            <div className="metric-header">
-              <div className="metric-info">
-                <div className="metric-icon">
+      <h4 className="breakdown-title">Analysis Dimensions</h4>
+      <div className="metrics-grid">
+        {Object.entries(scores).map(([metric, score]) => {
+          const weight = DEFAULT_WEIGHTS[metric] || 0.25;
+          const scoreColor = getScoreColor(score);
+          return (
+            <div key={metric} className="metric-dimension">
+              <div className="metric-header-centered">
+                <div className="metric-icon-centered">
                   {getMetricIcon(metric)}
                 </div>
-                <div className="metric-details">
-                  <h5 className="metric-title">{getMetricTitle(metric)}</h5>
-                  <p className="metric-explanation">{getMetricExplanation(metric)}</p>
+                <h5 className="metric-title-centered">{getMetricTitle(metric)}</h5>
+              </div>
+              <div className="metric-content-below">
+                <div className="metric-description-left">
+                  <p>{getMetricExplanation(metric)}</p>
+                </div>
+                <div className="metric-score-right">
+                  <div className={`score-circle ${scoreColor}`}>
+                    <span className={`score-percentage ${scoreColor}`}>{Math.round(score * 100)}%</span>
+                  </div>
+                  <span className="metric-weight">Weight: {Math.round(weight * 100)}%</span>
                 </div>
               </div>
-              <div className="metric-score">
-                <ScoreDisplay score={score} size="small" showPercentage={false} />
-              </div>
             </div>
-            
-            {/* Progress bar */}
-            <div className="metric-progress-bar">
-              <div 
-                className={`progress-fill ${score >= 0.7 ? 'high' : score >= 0.4 ? 'medium' : 'low'}`}
-                style={{ width: `${score * 100}%` }}
-              />
-            </div>
-          </div>
-        ))}
+          );
+        })}
       </div>
     </div>
   );

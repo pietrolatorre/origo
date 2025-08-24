@@ -157,6 +157,254 @@ Analyzes text for AI-generated content detection.
 - **GET** `/health` - Health check
 - **GET** `/docs` - Interactive API documentation
 
+## 🔧 Backend Architecture & Classes
+
+### Analysis Module Classes
+
+#### 1. PerplexityAnalyzer (`backend/analysis/perplexity.py`)
+**Status**: ✅ **Fully Implemented & Production Ready**
+
+**Purpose**: Calculates text perplexity using GPT-2 language model to detect AI-generated patterns.
+
+**Key Methods**:
+- `calculate_perplexity(text: str) -> float`: Core perplexity calculation with normalization
+- `analyze_sentences(sentences: List[str]) -> List[Dict]`: Sentence-level analysis with word breakdown
+- `analyze_paragraphs(text: str) -> List[Dict]`: Paragraph-level analysis with sentence breakdown
+- `get_word_impact_analysis(text: str) -> Dict`: Word-level impact analysis for highlighting
+
+**AI Detection Logic**: Lower perplexity scores indicate text patterns similar to GPT-2's training data, suggesting AI generation. Scores are normalized to 0-1 scale where higher values indicate higher AI probability.
+
+**Development Notes**: 
+- Uses transformer models for high accuracy
+- Implements proper tokenization and device management
+- Includes comprehensive error handling
+- Memory efficient with model caching
+
+#### 2. BurstinessAnalyzer (`backend/analysis/burstiness.py`)
+**Status**: ✅ **Fully Implemented & Production Ready**
+
+**Purpose**: Analyzes variation in sentence structure, length, and patterns. AI text often shows more uniform patterns.
+
+**Key Methods**:
+- `calculate_sentence_length_variation(sentences: List[str]) -> float`: Analyzes sentence length diversity
+- `calculate_syntactic_complexity_variation(sentences: List[str]) -> float`: Examines structural complexity patterns
+- `calculate_sentence_start_variation(sentences: List[str]) -> float`: Detects repetitive sentence openings
+- `calculate_punctuation_patterns(text: str) -> float`: Analyzes punctuation usage diversity
+- `analyze_text(text: str) -> Dict`: Comprehensive burstiness analysis
+
+**AI Detection Logic**: Uniform patterns (low burstiness) suggest AI generation. Calculates coefficient of variation and pattern diversity metrics.
+
+**Development Notes**:
+- Implements multiple linguistic metrics
+- Weighted scoring system for different pattern types
+- Statistical analysis of text variation
+- No external dependencies required
+
+#### 3. NgramAnalyzer (`backend/analysis/ngram.py`) 
+**Status**: ✅ **Fully Implemented & Production Ready**
+
+**Purpose**: Detects repetitive patterns and n-gram similarities common in AI-generated text.
+
+**Key Methods**:
+- `extract_ngrams(text: str, n: int) -> List[Tuple]`: Extracts n-gram sequences
+- `calculate_ngram_repetition(text: str, n: int) -> float`: Measures n-gram repetition rates
+- `calculate_phrase_repetition(text: str) -> float`: Detects repetitive phrases
+- `calculate_transition_predictability(text: str) -> float`: Analyzes word transition patterns
+- `calculate_lexical_diversity(text: str) -> float`: Measures vocabulary diversity
+- `analyze_text(text: str) -> Dict`: Comprehensive n-gram analysis
+
+**AI Detection Logic**: High repetition rates and predictable transitions indicate AI generation. Uses entropy calculations and frequency analysis.
+
+**Development Notes**:
+- Implements multiple n-gram sizes (2-5)
+- Uses Counter and statistical methods
+- Entropy-based predictability scoring
+- Moving window analysis for consistency
+
+#### 4. SemanticAnalyzer (`backend/analysis/semantic.py`)
+**Status**: ✅ **Fully Implemented & Production Ready**
+
+**Purpose**: Uses Sentence-BERT embeddings to analyze semantic coherence and flow patterns.
+
+**Key Methods**:
+- `get_sentence_embeddings(sentences: List[str]) -> np.ndarray`: Generates sentence embeddings
+- `calculate_semantic_coherence(sentences: List[str]) -> float`: Measures overall semantic consistency
+- `calculate_semantic_flow(sentences: List[str]) -> float`: Analyzes flow between consecutive sentences
+- `calculate_topic_consistency(text: str) -> float`: Measures topic consistency across paragraphs
+- `calculate_semantic_repetition(sentences: List[str]) -> float`: Detects semantic redundancy
+- `analyze_text(text: str) -> Dict`: Comprehensive semantic analysis
+
+**AI Detection Logic**: Extreme semantic coherence or unusual flow patterns may indicate AI generation. Uses cosine similarity between embeddings.
+
+**Development Notes**:
+- Uses Sentence-BERT (all-MiniLM-L6-v2) model
+- Implements similarity matrix calculations
+- Sklearn integration for similarity metrics
+- Sophisticated pattern recognition algorithms
+
+#### 5. ScoreFusion (`backend/analysis/scoring.py`)
+**Status**: ✅ **Fully Implemented & Production Ready**
+
+**Purpose**: Combines multiple analysis heuristics into comprehensive AI detection scores with intelligent weighting.
+
+**Key Methods**:
+- `analyze_text_comprehensive(text: str) -> Dict`: Main analysis orchestrator
+- `validate_weights()`: Ensures scoring weights sum to 1.0
+- `_analyze_paragraphs(text: str) -> List[Dict]`: Paragraph-level scoring fusion
+- `_analyze_sentences(sentences: List[str]) -> List[Dict]`: Sentence-level scoring fusion
+- `_analyze_words(text: str) -> Dict`: Word-level impact analysis
+
+**Scoring Weights** (Production Configuration):
+- **Perplexity**: 40% (highest weight - most reliable)
+- **Burstiness**: 20% (structural patterns)
+- **N-gram Similarity**: 20% (repetition patterns)
+- **Semantic Coherence**: 20% (semantic patterns)
+
+**Development Notes**:
+- Implements weighted fusion algorithm
+- Comprehensive error handling for each analyzer
+- Hierarchical analysis (text → paragraph → sentence → word)
+- Production-ready with extensive logging
+
+### Utility Classes
+
+#### ModelLoader (`backend/utils/model_loader.py`)
+**Status**: ✅ **Production Ready Singleton**
+
+**Purpose**: Efficiently manages AI model loading with singleton pattern to prevent memory waste.
+
+**Key Methods**:
+- `get_gpt2_model() -> tuple`: Loads GPT-2 model and tokenizer
+- `get_sentence_transformer() -> SentenceTransformer`: Loads Sentence-BERT model
+- `get_device() -> str`: Determines optimal device (CPU/GPU)
+- `preload_all_models()`: Startup optimization method
+
+**Models Managed**:
+- **GPT-2**: For perplexity calculations
+- **all-MiniLM-L6-v2**: For semantic analysis
+- **Device Management**: Automatic CPU/GPU detection
+
+#### SentenceSplitter (`backend/utils/sentence_splitter.py`)
+**Status**: ✅ **Production Ready**
+
+**Purpose**: Handles text preprocessing, tokenization, and segmentation with NLTK integration.
+
+**Key Methods**:
+- `clean_text(text: str) -> str`: Text normalization and cleaning
+- `split_into_sentences(text: str) -> List[str]`: NLTK-based sentence segmentation
+- `split_into_paragraphs(text: str) -> List[str]`: Paragraph extraction
+- `tokenize_words(text: str, remove_stopwords: bool) -> List[str]`: Word tokenization
+- `extract_word_positions(text: str, target_words: List[str]) -> Dict`: Position mapping for UI highlighting
+- `get_text_statistics(text: str) -> Dict`: Text metrics calculation
+
+### API Integration (`backend/main.py`)
+**Status**: ✅ **Production Ready FastAPI Application**
+
+**Key Features**:
+- FastAPI framework with automatic OpenAPI documentation
+- CORS middleware for frontend integration
+- Health check endpoints
+- Comprehensive error handling
+- Request/response validation with Pydantic models
+- Model preloading for optimal performance
+
+## 📊 Backend Output Structure
+
+### Main Analysis Response
+
+The `/analyze` endpoint returns a comprehensive JSON structure:
+
+```json
+{
+  "overall_score": 0.78,                    // Combined AI probability (0-1)
+  "global_scores": {                        // Individual component scores
+    "perplexity": 0.83,                     // GPT-2 perplexity analysis
+    "burstiness": 0.72,                     // Sentence pattern variation
+    "semantic_coherence": 0.65,             // Semantic flow consistency
+    "ngram_similarity": 0.89                // N-gram repetition patterns
+  },
+  "paragraphs": [                           // Paragraph-level analysis
+    {
+      "text": "Paragraph content...",
+      "score": 0.80,                        // Paragraph AI probability
+      "sentences": [                        // Nested sentence analysis
+        {
+          "text": "Sentence content...",
+          "score": 0.91,                    // Sentence AI probability
+          "words": [                        // Word-level contributions
+            {
+              "word": "thus",
+              "score": 0.92                 // Word AI probability
+            }
+          ]
+        }
+      ]
+    }
+  ],
+  "word_analysis": {                        // Global word impact analysis
+    "unique_words": [
+      {
+        "word": "hence",
+        "average_score": 0.91,               // Average AI probability for word
+        "count": 3                          // Frequency in text
+      }
+    ]
+  },
+  "analysis_metadata": {                    // Text statistics and analysis info
+    "text_length": 1247,                    // Character count
+    "word_count": 189,                      // Word count
+    "sentence_count": 12,                   // Sentence count
+    "paragraph_count": 3,                   // Paragraph count
+    "weights_used": {                       // Scoring weights applied
+      "perplexity": 0.4,
+      "burstiness": 0.2,
+      "semantic_coherence": 0.2,
+      "ngram_similarity": 0.2
+    }
+  }
+}
+```
+
+### Score Interpretation
+
+**Score Ranges**:
+- **0.0 - 0.4**: Low AI probability (likely human-written) 🟢
+- **0.4 - 0.7**: Medium AI probability (uncertain) 🟡  
+- **0.7 - 1.0**: High AI probability (likely AI-generated) 🔴
+
+**Component Score Details**:
+
+1. **Perplexity Score** (0-1): 
+   - Measures text predictability using GPT-2
+   - Higher = more predictable = more AI-like
+   - Most reliable single indicator (40% weight)
+
+2. **Burstiness Score** (0-1):
+   - Measures sentence structure variation
+   - Higher = more uniform = more AI-like
+   - Analyzes length, complexity, punctuation patterns
+
+3. **N-gram Similarity Score** (0-1):
+   - Measures repetitive patterns and phrases
+   - Higher = more repetitive = more AI-like
+   - Includes bigram, trigram, and phrase analysis
+
+4. **Semantic Coherence Score** (0-1):
+   - Measures semantic flow and consistency
+   - Extreme values (very high/low) = more AI-like
+   - Uses Sentence-BERT embeddings for analysis
+
+### Hierarchical Analysis Structure
+
+The system provides analysis at multiple granularities:
+
+1. **Document Level**: Overall AI probability and global component scores
+2. **Paragraph Level**: Individual paragraph scores with sentence breakdown
+3. **Sentence Level**: Individual sentence scores with word contributions
+4. **Word Level**: Word-specific AI probability contributions and frequencies
+
+This hierarchical approach enables precise identification of AI-generated content at different text levels, supporting detailed user interface highlighting and explanations.
+
 ## 🔧 Analysis Components
 
 ### 1. Perplexity Analysis

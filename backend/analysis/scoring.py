@@ -106,6 +106,7 @@ class ScoreFusion:
                 'word_analysis': word_analysis,
                 'analysis_metadata': {
                     'text_length': len(text),
+                    'word_count': len(sentence_splitter.tokenize_words(text)),
                     'sentence_count': len(sentence_splitter.split_into_sentences(text)),
                     'paragraph_count': len(sentence_splitter.split_into_paragraphs(text)),
                     'weights_used': self.weights.copy()
@@ -264,6 +265,7 @@ class ScoreFusion:
             'word_analysis': {'unique_words': []},
             'analysis_metadata': {
                 'text_length': 0,
+                'word_count': 0,
                 'sentence_count': 0,
                 'paragraph_count': 0,
                 'error': 'Text too short or empty'
@@ -284,6 +286,7 @@ class ScoreFusion:
             'word_analysis': {'unique_words': []},
             'analysis_metadata': {
                 'text_length': 0,
+                'word_count': 0,
                 'sentence_count': 0,
                 'paragraph_count': 0,
                 'error': error_msg

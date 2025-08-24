@@ -19,8 +19,6 @@ export const TextInput: React.FC<TextInputProps> = ({
   error
 }) => {
   const [text, setText] = useState('');
-  const [wordCount, setWordCount] = useState(0);
-  const [charCount, setCharCount] = useState(0);
 
   // Sample text for demonstration
   const sampleText = `Artificial intelligence has revolutionized numerous industries and transformed how we approach complex problems. Machine learning algorithms can now process vast amounts of data with unprecedented accuracy and speed. These systems demonstrate remarkable capabilities in pattern recognition, natural language processing, and predictive analytics. The integration of AI technologies continues to expand across various sectors, including healthcare, finance, and transportation. As these systems become more sophisticated, they enable innovative solutions that were previously unimaginable. The potential applications seem limitless, offering exciting possibilities for the future.`;
@@ -29,16 +27,12 @@ export const TextInput: React.FC<TextInputProps> = ({
   useEffect(() => {
     if (!text) {
       setText(sampleText);
-      setCharCount(sampleText.length);
-      setWordCount(sampleText.trim().split(/\s+/).length);
     }
   }, [sampleText]);
 
   const handleTextChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
     const newText = e.target.value;
     setText(newText);
-    setCharCount(newText.length);
-    setWordCount(newText.trim() ? newText.trim().split(/\s+/).length : 0);
   }, []);
 
   const handleAnalyze = useCallback(() => {
@@ -49,8 +43,6 @@ export const TextInput: React.FC<TextInputProps> = ({
 
   const handleClear = useCallback(() => {
     setText('');
-    setCharCount(0);
-    setWordCount(0);
     onClear();
   }, [onClear]);
 
@@ -68,14 +60,6 @@ export const TextInput: React.FC<TextInputProps> = ({
     <div className="text-input-section">
       <div className="input-header">
         <h2>Text Analysis</h2>
-        <div className="text-stats">
-          <span className={`stat ${charCount > 50000 ? 'error' : ''}`}>
-            {charCount.toLocaleString()} / 50,000 characters
-          </span>
-          <span className="stat">
-            {wordCount.toLocaleString()} words
-          </span>
-        </div>
       </div>
 
       <div className="input-container">

@@ -2,8 +2,12 @@
 
 # Origo Integration Test Script
 # This script tests the full application stack
+# Run from the tests folder: ./integration-test.sh
 
 echo "🧪 Origo Integration Test Starting..."
+
+# Navigate to project root directory
+cd "$(dirname "$0")/.."
 
 # Test 1: Check Docker Compose configuration
 echo "📋 Testing Docker Compose configuration..."

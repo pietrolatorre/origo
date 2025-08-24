@@ -2,15 +2,14 @@ version: '3.8'
 
 services:
   backend:
-    build: 
-      context: ./backend
-      dockerfile: Dockerfile
+    build: ./backend
     container_name: origo-backend
     ports:
       - "8000:8000"
     environment:
       - PYTHONPATH=/app
       - PYTHONUNBUFFERED=1
+      - DOCKER_BUILDKIT=0
     volumes:
       - ./backend:/app
       - /app/__pycache__
@@ -24,14 +23,13 @@ services:
       - origo-network
 
   frontend:
-    build:
-      context: ./frontend
-      dockerfile: Dockerfile
+    build: ./frontend
     container_name: origo-frontend
     ports:
       - "3000:80"
     environment:
       - VITE_API_URL=http://localhost:8000
+      - DOCKER_BUILDKIT=0
     depends_on:
       backend:
         condition: service_healthy

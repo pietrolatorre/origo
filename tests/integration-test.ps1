@@ -1,7 +1,15 @@
 # Origo Integration Test Script (PowerShell)
 # This script tests the full application stack on Windows
+# Run from the tests folder: .\integration-test.ps1
 
 Write-Host "🧪 Origo Integration Test Starting..." -ForegroundColor Cyan
+
+# Navigate to project root directory
+$scriptPath = Split-Path -Parent $MyInvocation.MyCommand.Definition
+$projectRoot = Split-Path -Parent $scriptPath
+Set-Location $projectRoot
+
+Write-Host "📍 Working from project root: $(Get-Location)" -ForegroundColor Gray
 
 # Test 1: Check Docker Compose configuration
 Write-Host "📋 Testing Docker Compose configuration..." -ForegroundColor Yellow

@@ -255,6 +255,15 @@ curl http://localhost:8000/health
 curl -X POST http://localhost:8000/analyze \
   -H "Content-Type: application/json" \
   -d '{"text": "This is a test sentence."}'
+
+# Run automated integration tests
+# Windows:
+cd tests
+.\integration-test.ps1
+
+# Linux/macOS:
+cd tests
+./integration-test.sh
 ```
 
 ## 📊 Performance Considerations
@@ -280,6 +289,29 @@ curl -X POST http://localhost:8000/analyze \
 - **Backend**: Deploy to Heroku, Railway, or AWS
 - **Frontend**: Deploy to Vercel, Netlify, or AWS S3
 - **Full-stack**: Use Docker on DigitalOcean, AWS ECS, or Google Cloud Run
+
+## 📁 Project Structure
+
+```
+origo/
+├── backend/              # Python FastAPI application
+│   ├── analysis/         # AI detection modules
+│   ├── utils/           # Utilities and model management
+│   ├── main.py          # FastAPI app entry point
+│   └── requirements.txt # Python dependencies
+├── frontend/            # React TypeScript application
+│   ├── src/
+│   │   ├── components/  # React components
+│   │   ├── services/    # API communication
+│   │   └── types/       # TypeScript definitions
+│   └── package.json     # Node.js dependencies
+├── tests/               # Integration test scripts
+│   ├── integration-test.ps1  # Windows PowerShell tests
+│   ├── integration-test.sh   # Linux/macOS Bash tests
+│   └── README.md        # Test documentation
+├── docker-compose.yml   # Multi-service orchestration
+└── README.md           # Project documentation
+```
 
 ## 🤝 Contributing
 

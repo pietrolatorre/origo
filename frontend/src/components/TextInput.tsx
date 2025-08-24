@@ -1,0 +1,128 @@
+/**
+ * TextInput component for text input and analysis controls
+ */
+
+import React, { useState, useCallback } from 'react';
+import { Send, Trash2, Loader2 } from 'lucide-react';
+
+interface TextInputProps {
+  onAnalyze: (text: string) => void;
+  onClear: () => void;
+  isAnalyzing: boolean;
+  error: string | null;
+}
+
+export const TextInput: React.FC<TextInputProps> = ({
+  onAnalyze,
+  onClear,
+  isAnalyzing,
+  error
+}) => {
+  const [text, setText] = useState('');
+  const [wordCount, setWordCount] = useState(0);
+  const [charCount, setCharCount] = useState(0);
+
+  const handleTextChange = useCallback((e: React.ChangeEvent<HTMLTextAreaElement>) => {
+    const newText = e.target.value;
+    setText(newText);
+    setCharCount(newText.length);
+    setWordCount(newText.trim() ? newText.trim().split(/\\s+/).length : 0);
+  }, []);
+
+  const handleAnalyze = useCallback(() => {
+    if (text.trim() && text.length >= 10) {
+      onAnalyze(text);
+    }
+  }, [text, onAnalyze]);
+
+  const handleClear = useCallback(() => {
+    setText('');
+    setCharCount(0);
+    setWordCount(0);
+    onClear();
+  }, [onClear]);
+
+  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
+    if (e.ctrlKey && e.key === 'Enter') {
+      e.preventDefault();
+      handleAnalyze();
+    }
+  }, [handleAnalyze]);
+
+  const isDisabled = text.length < 10 || isAnalyzing;
+  const isOverLimit = text.length > 50000;
+
+  return (
+    <div className=\"text-input-section\">
+      <div className=\"input-header\">
+        <h2>Text Analysis</h2>
+        <div className=\"text-stats\">
+          <span className={`stat ${charCount > 50000 ? 'error' : ''}`}>
+            {charCount.toLocaleString()} / 50,000 characters
+          </span>
+          <span className=\"stat\">
+            {wordCount.toLocaleString()} words
+          </span>
+        </div>
+      </div>
+
+      <div className=\"input-container\">
+        <textarea
+          className={`text-input ${error ? 'error' : ''} ${isOverLimit ? 'over-limit' : ''}`}
+          placeholder=\"Enter English text here for AI detection analysis...\n\nMinimum 10 characters required. The analysis will examine:\n• Perplexity patterns using GPT-2\n• Sentence structure and variation\n• N-gram repetition and similarity\n• Semantic coherence patterns\n\nPress Ctrl+Enter to analyze quickly.\"
+          value={text}
+          onChange={handleTextChange}
+          onKeyDown={handleKeyDown}
+          disabled={isAnalyzing}
+          rows={12}
+          maxLength={50000}
+        />
+        
+        <div className=\"input-controls\">
+          <div className=\"control-buttons\">
+            <button
+              className=\"btn btn-secondary\"
+              onClick={handleClear}
+              disabled={!text || isAnalyzing}
+              title=\"Clear text\"
+            >
+              <Trash2 size={16} />
+              Clear
+            </button>
+            
+            <button
+              className=\"btn btn-primary\"
+              onClick={handleAnalyze}
+              disabled={isDisabled || isOverLimit}
+              title={isDisabled ? 'Enter at least 10 characters' : 'Analyze text (Ctrl+Enter)'}
+            >
+              {isAnalyzing ? (
+                <>
+                  <Loader2 size={16} className=\"spinning\" />
+                  Analyzing...
+                </>
+              ) : (
+                <>
+                  <Send size={16} />
+                  Analyze Text
+                </>
+              )}
+            </button>
+          </div>
+          
+          {error && (
+            <div className=\"error-message\">
+              {error}
+            </div>
+          )}
+          
+          {isOverLimit && (
+            <div className=\"error-message\">
+              Text exceeds maximum length of 50,000 characters
+            </div>
+          )}
+        </div>
+      </div>
+    </div>
+  );
+};

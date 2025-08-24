@@ -35,44 +35,46 @@ export const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
 
   return (
     <div className={`score-display ${size}`}>
-      <div className=\"score-circle\">
-        <svg className=\"score-svg\" width=\"100\" height=\"100\">
+      <div className="score-circle">
+        <svg className="score-svg" width="100" height="100">
           {/* Background circle */}
           <circle
-            className=\"score-bg\"
-            cx=\"50\"
-            cy=\"50\"
-            r=\"40\"
-            strokeWidth=\"8\"
-            fill=\"transparent\"
-            stroke=\"#e5e7eb\"
+            className="score-bg"
+            cx="50"
+            cy="50"
+            r="40"
+            strokeWidth="8"
+            fill="transparent"
+            stroke="#e5e7eb"
           />
           {/* Progress circle */}
           <circle
             className={`score-progress ${getScoreClass(score)}`}
-            cx=\"50\"
-            cy=\"50\"
-            r=\"40\"
-            strokeWidth=\"8\"
-            fill=\"transparent\"
+            cx="50"
+            cy="50"
+            r="40"
+            strokeWidth="8"
+            fill="transparent"
             stroke={getScoreColor(score)}
-            strokeLinecap=\"round\"
+            strokeLinecap="round"
             strokeDasharray={circumference}
             strokeDashoffset={strokeDashoffset}
-            transform=\"rotate(-90 50 50)\"
+            transform="rotate(-90 50 50)"
           />
         </svg>
-        <div className=\"score-text\">
+        <div className="score-text">
           <span className={`score-value ${getScoreClass(score)}`}>
             {showPercentage ? `${percentage}%` : score.toFixed(2)}
           </span>
         </div>
       </div>
       {label && (
-        <div className=\"score-label\">
+        <div className="score-label">
           {label}
         </div>
       )}
     </div>
   );
 };
+
+export default ScoreDisplay;

@@ -48,28 +48,28 @@ export const MetricsBreakdown: React.FC<MetricsBreakdownProps> = ({ scores }) =>
   };
 
   return (
-    <div className=\"metrics-breakdown\">
-      <h4 className=\"breakdown-title\">Component Scores</h4>
-      <div className=\"metrics-list\">
+    <div className="metrics-breakdown">
+      <h4 className="breakdown-title">Component Scores</h4>
+      <div className="metrics-list">
         {Object.entries(scores).map(([metric, score]) => (
-          <div key={metric} className=\"metric-item\">
-            <div className=\"metric-header\">
-              <div className=\"metric-info\">
-                <div className=\"metric-icon\">
+          <div key={metric} className="metric-item">
+            <div className="metric-header">
+              <div className="metric-info">
+                <div className="metric-icon">
                   {getMetricIcon(metric)}
                 </div>
-                <div className=\"metric-details\">
-                  <h5 className=\"metric-title\">{getMetricTitle(metric)}</h5>
-                  <p className=\"metric-explanation\">{getMetricExplanation(metric)}</p>
+                <div className="metric-details">
+                  <h5 className="metric-title">{getMetricTitle(metric)}</h5>
+                  <p className="metric-explanation">{getMetricExplanation(metric)}</p>
                 </div>
               </div>
-              <div className=\"metric-score\">
-                <ScoreDisplay score={score} size=\"small\" showPercentage={false} />
+              <div className="metric-score">
+                <ScoreDisplay score={score} size="small" showPercentage={false} />
               </div>
             </div>
             
             {/* Progress bar */}
-            <div className=\"metric-progress-bar\">
+            <div className="metric-progress-bar">
               <div 
                 className={`progress-fill ${score >= 0.7 ? 'high' : score >= 0.4 ? 'medium' : 'low'}`}
                 style={{ width: `${score * 100}%` }}

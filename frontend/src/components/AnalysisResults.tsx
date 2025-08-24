@@ -7,7 +7,7 @@ import { ChevronDown, ChevronUp, Target, BarChart3, FileText, List } from 'lucid
 import type { AnalysisResult } from '../types/analysis';
 import { ScoreDisplay } from './ScoreDisplay';
 import { HighlightedText } from './HighlightedText';
-import { WordTable } from './WordTable';
+import WordTable from './WordTable';
 import { MetricsBreakdown } from './MetricsBreakdown';
 
 interface AnalysisResultsProps {

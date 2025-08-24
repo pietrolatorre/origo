@@ -2,9 +2,9 @@
  * HighlightedText component for displaying text with color-coded highlights
  */
 
-import React, { useState, useMemo } from 'react';
+import React, { useState } from 'react';
 import { ChevronDown, ChevronUp, Info } from 'lucide-react';
-import type { ParagraphAnalysis, SentenceAnalysis, WordAnalysis } from '../types/analysis';
+import type { ParagraphAnalysis, SentenceAnalysis } from '../types/analysis';
 
 interface HighlightedTextProps {
   paragraphs: ParagraphAnalysis[];
@@ -53,16 +53,16 @@ export const HighlightedText: React.FC<HighlightedTextProps> = ({ paragraphs }) 
     setTooltip({ visible: false, x: 0, y: 0, info: null });
   };
 
-  const renderHighlightedSentence = (sentence: SentenceAnalysis, sentenceIndex: number) => {
+  const renderHighlightedSentence = (sentence: SentenceAnalysis) => {
     if (highlightLevel === 'word' && sentence.words.length > 0) {
       // Word-level highlighting
       let highlightedText = sentence.text;
       const sortedWords = [...sentence.words].sort((a, b) => b.word.length - a.word.length);
       
       sortedWords.forEach(wordInfo => {
-        const regex = new RegExp(`\\\\b${wordInfo.word}\\\\b`, 'gi');
+        const regex = new RegExp(`\\b${wordInfo.word}\\b`, 'gi');
         highlightedText = highlightedText.replace(regex, (match) => 
-          `<mark class=\"word-highlight ${getHighlightClass(wordInfo.score)}\" data-score=\"${wordInfo.score}\" data-word=\"${wordInfo.word}\">${match}</mark>`
+          `<mark class="word-highlight ${getHighlightClass(wordInfo.score)}" data-score="${wordInfo.score}" data-word="${wordInfo.word}">${match}</mark>`
         );
       });
       
@@ -89,49 +89,49 @@ export const HighlightedText: React.FC<HighlightedTextProps> = ({ paragraphs }) 
   };
 
   return (
-    <div className=\"highlighted-text\">
+    <div className="highlighted-text">
       {/* Controls */}
-      <div className=\"highlight-controls\">
-        <div className=\"control-group\">
-          <label htmlFor=\"highlight-level\">Highlight Level:</label>
+      <div className="highlight-controls">
+        <div className="control-group">
+          <label htmlFor="highlight-level">Highlight Level:</label>
           <select 
-            id=\"highlight-level\"
+            id="highlight-level"
             value={highlightLevel} 
             onChange={(e) => setHighlightLevel(e.target.value as 'paragraph' | 'sentence' | 'word')}
-            className=\"highlight-select\"
+            className="highlight-select"
           >
-            <option value=\"paragraph\">Paragraphs</option>
-            <option value=\"sentence\">Sentences</option>
-            <option value=\"word\">Words</option>
+            <option value="paragraph">Paragraphs</option>
+            <option value="sentence">Sentences</option>
+            <option value="word">Words</option>
           </select>
         </div>
         
-        <div className=\"legend\">
-          <div className=\"legend-item\">
-            <span className=\"legend-color highlight-low\"></span>
+        <div className="legend">
+          <div className="legend-item">
+            <span className="legend-color highlight-low"></span>
             <span>Low AI Probability</span>
           </div>
-          <div className=\"legend-item\">
-            <span className=\"legend-color highlight-medium\"></span>
+          <div className="legend-item">
+            <span className="legend-color highlight-medium"></span>
             <span>Medium AI Probability</span>
           </div>
-          <div className=\"legend-item\">
-            <span className=\"legend-color highlight-high\"></span>
+          <div className="legend-item">
+            <span className="legend-color highlight-high"></span>
             <span>High AI Probability</span>
           </div>
         </div>
       </div>
 
       {/* Text content */}
-      <div className=\"text-content\">
+      <div className="text-content">
         {paragraphs.map((paragraph, pIndex) => (
-          <div key={pIndex} className=\"paragraph-container\">
+          <div key={pIndex} className="paragraph-container">
             <div 
               className={`paragraph-header ${expandedParagraphs.has(pIndex) ? 'expanded' : ''}`}
               onClick={() => toggleParagraph(pIndex)}
             >
-              <div className=\"paragraph-info\">
-                <span className=\"paragraph-label\">Paragraph {pIndex + 1}</span>
+              <div className="paragraph-info">
+                <span className="paragraph-label">Paragraph {pIndex + 1}</span>
                 <span className={`paragraph-score ${getHighlightClass(paragraph.score)}`}>
                   AI Probability: {Math.round(paragraph.score * 100)}%
                 </span>
@@ -143,17 +143,17 @@ export const HighlightedText: React.FC<HighlightedTextProps> = ({ paragraphs }) 
               <div className={`paragraph-content ${highlightLevel === 'paragraph' ? getHighlightClass(paragraph.score) : ''}`}>
                 {highlightLevel === 'paragraph' ? (
                   <div 
-                    className=\"paragraph-text\"
+                    className="paragraph-text"
                     onMouseEnter={(e) => showTooltip(e, { score: paragraph.score, type: 'paragraph', text: paragraph.text })}
                     onMouseLeave={hideTooltip}
                   >
                     {paragraph.text}
                   </div>
                 ) : (
-                  <div className=\"sentences-container\">
+                  <div className="sentences-container">
                     {paragraph.sentences.map((sentence, sIndex) => (
                       <span key={sIndex}>
-                        {renderHighlightedSentence(sentence, sIndex)}
+                        {renderHighlightedSentence(sentence)}
                         {sIndex < paragraph.sentences.length - 1 && ' '}
                       </span>
                     ))}
@@ -168,7 +168,7 @@ export const HighlightedText: React.FC<HighlightedTextProps> = ({ paragraphs }) 
       {/* Tooltip */}
       {tooltip.visible && tooltip.info && (
         <div 
-          className=\"highlight-tooltip\"
+          className="highlight-tooltip"
           style={{
             position: 'fixed',
             left: tooltip.x,
@@ -176,16 +176,16 @@ export const HighlightedText: React.FC<HighlightedTextProps> = ({ paragraphs }) 
             transform: 'translate(-50%, -100%)'
           }}
         >
-          <div className=\"tooltip-header\">
+          <div className="tooltip-header">
             <Info size={14} />
-            <span className=\"tooltip-type\">{tooltip.info.type} Analysis</span>
+            <span className="tooltip-type">{tooltip.info.type} Analysis</span>
           </div>
-          <div className=\"tooltip-content\">
-            <div className=\"tooltip-score\">
+          <div className="tooltip-content">
+            <div className="tooltip-score">
               AI Probability: <strong>{Math.round(tooltip.info.score * 100)}%</strong>
             </div>
             {tooltip.info.text.length > 100 && (
-              <div className=\"tooltip-text\">
+              <div className="tooltip-text">
                 {tooltip.info.text.substring(0, 100)}...
               </div>
             )}

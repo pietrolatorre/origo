@@ -26,7 +26,7 @@ export const TextInput: React.FC<TextInputProps> = ({
     const newText = e.target.value;
     setText(newText);
     setCharCount(newText.length);
-    setWordCount(newText.trim() ? newText.trim().split(/\\s+/).length : 0);
+    setWordCount(newText.trim() ? newText.trim().split(/\s+/).length : 0);
   }, []);
 
   const handleAnalyze = useCallback(() => {
@@ -53,23 +53,23 @@ export const TextInput: React.FC<TextInputProps> = ({
   const isOverLimit = text.length > 50000;
 
   return (
-    <div className=\"text-input-section\">
-      <div className=\"input-header\">
+    <div className="text-input-section">
+      <div className="input-header">
         <h2>Text Analysis</h2>
-        <div className=\"text-stats\">
+        <div className="text-stats">
           <span className={`stat ${charCount > 50000 ? 'error' : ''}`}>
             {charCount.toLocaleString()} / 50,000 characters
           </span>
-          <span className=\"stat\">
+          <span className="stat">
             {wordCount.toLocaleString()} words
           </span>
         </div>
       </div>
 
-      <div className=\"input-container\">
+      <div className="input-container">
         <textarea
           className={`text-input ${error ? 'error' : ''} ${isOverLimit ? 'over-limit' : ''}`}
-          placeholder=\"Enter English text here for AI detection analysis...\n\nMinimum 10 characters required. The analysis will examine:\n• Perplexity patterns using GPT-2\n• Sentence structure and variation\n• N-gram repetition and similarity\n• Semantic coherence patterns\n\nPress Ctrl+Enter to analyze quickly.\"
+          placeholder="Enter English text here for AI detection analysis...\n\nMinimum 10 characters required. The analysis will examine:\n• Perplexity patterns using GPT-2\n• Sentence structure and variation\n• N-gram repetition and similarity\n• Semantic coherence patterns\n\nPress Ctrl+Enter to analyze quickly."
           value={text}
           onChange={handleTextChange}
           onKeyDown={handleKeyDown}
@@ -78,27 +78,27 @@ export const TextInput: React.FC<TextInputProps> = ({
           maxLength={50000}
         />
         
-        <div className=\"input-controls\">
-          <div className=\"control-buttons\">
+        <div className="input-controls">
+          <div className="control-buttons">
             <button
-              className=\"btn btn-secondary\"
+              className="btn btn-secondary"
               onClick={handleClear}
               disabled={!text || isAnalyzing}
-              title=\"Clear text\"
+              title="Clear text"
             >
               <Trash2 size={16} />
               Clear
             </button>
             
             <button
-              className=\"btn btn-primary\"
+              className="btn btn-primary"
               onClick={handleAnalyze}
               disabled={isDisabled || isOverLimit}
               title={isDisabled ? 'Enter at least 10 characters' : 'Analyze text (Ctrl+Enter)'}
             >
               {isAnalyzing ? (
                 <>
-                  <Loader2 size={16} className=\"spinning\" />
+                  <Loader2 size={16} className="spinning" />
                   Analyzing...
                 </>
               ) : (
@@ -111,13 +111,13 @@ export const TextInput: React.FC<TextInputProps> = ({
           </div>
           
           {error && (
-            <div className=\"error-message\">
+            <div className="error-message">
               {error}
             </div>
           )}
           
           {isOverLimit && (
-            <div className=\"error-message\">
+            <div className="error-message">
               Text exceeds maximum length of 50,000 characters
             </div>
           )}

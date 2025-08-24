@@ -7,7 +7,7 @@ AI-generated text often shows more uniform patterns (lower burstiness)
 import logging
 import numpy as np
 from typing import List, Dict, Any
-from ..utils.sentence_splitter import sentence_splitter
+from utils.sentence_splitter import sentence_splitter
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

@@ -10,7 +10,7 @@ from .perplexity import perplexity_analyzer
 from .burstiness import burstiness_analyzer
 from .ngram import ngram_analyzer
 from .semantic import semantic_analyzer
-from ..utils.sentence_splitter import sentence_splitter
+from utils.sentence_splitter import sentence_splitter
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

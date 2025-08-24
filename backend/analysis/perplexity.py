@@ -8,8 +8,8 @@ import logging
 import numpy as np
 import torch
 from typing import List, Dict, Any
-from ..utils.model_loader import model_loader
-from ..utils.sentence_splitter import sentence_splitter
+from utils.model_loader import model_loader
+from utils.sentence_splitter import sentence_splitter
 
 # Configure logging
 logging.basicConfig(level=logging.INFO)

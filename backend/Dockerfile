@@ -7,9 +7,11 @@ WORKDIR /app
 
 # Install only essential system dependencies
 # gcc and g++ needed for some Python packages compilation
+# curl needed for health checks
 RUN apt-get update && apt-get install -y \
     gcc \
     g++ \
+    curl \
     --no-install-recommends \
     && rm -rf /var/lib/apt/lists/* \
     && apt-get clean
@@ -37,9 +39,9 @@ USER appuser
 # Expose port
 EXPOSE 8000
 
-# Simple health check without curl dependency
+# Health check using curl to match docker-compose.yml
 HEALTHCHECK --interval=30s --timeout=10s --start-period=40s --retries=3 \
-  CMD python -c "import requests; requests.get('http://localhost:8000/health', timeout=5)" || exit 1
+  CMD curl -f http://localhost:8000/health || exit 1
 
 # Run the application
 CMD ["uvicorn", "main:app", "--host", "0.0.0.0", "--port", "8000"]

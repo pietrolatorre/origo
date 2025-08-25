@@ -86,7 +86,7 @@ class PDFReportGenerator:
         """Get color based on score value"""
         if score >= 0.7:
             return colors.Color(0.87, 0.27, 0.15)  # Red #dc2626
-        elif score >= 0.4:
+        elif score >= 0.6:  # Changed from 0.4 to 0.6
             return colors.Color(0.96, 0.62, 0.07)  # Yellow #f59e0b
         else:
             return colors.Color(0.06, 0.73, 0.51)  # Green #10b981

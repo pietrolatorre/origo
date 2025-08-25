@@ -1,0 +1,65 @@
+{
+  "patterns": {
+    "oxford_comma": {
+      "regex": ", (?:and|or) ",
+      "threshold_per_1000_words": 20,
+      "weight": 2.0,
+      "description": "Overuse of Oxford commas"
+    },
+    "em_dash_abuse": {
+      "regex": "—",
+      "threshold_per_1000_words": 3,
+      "weight": 2.5,
+      "description": "Excessive use of em dashes"
+    },
+    "bullet_points_with_periods": {
+      "regex": "^\\s*[\\•\\-\\*]\\s*.+\\.\\s*$",
+      "multiline": true,
+      "weight": 3.0,
+      "description": "Bullet points ending with periods"
+    },
+    "excessive_colons": {
+      "char": ":",
+      "threshold_per_1000_words": 10,
+      "weight": 1.5,
+      "description": "Overuse of colons"
+    },
+    "parenthetical_clarifications": {
+      "regex": "\\([ie]\\.g\\.,",
+      "weight": 2.0,
+      "description": "Frequent parenthetical clarifications with i.e. or e.g."
+    },
+    "semicolon_overuse": {
+      "char": ";",
+      "threshold_per_1000_words": 8,
+      "weight": 2.0,
+      "description": "Excessive use of semicolons"
+    },
+    "quotation_symmetry": {
+      "regex": "\"[^\"]*\"",
+      "weight": 1.5,
+      "description": "Perfect quotation mark symmetry"
+    },
+    "ellipsis_patterns": {
+      "regex": "\\.\\.\\.(?!\\s*[\"'])",
+      "weight": 1.8,
+      "description": "Unusual ellipsis usage patterns"
+    },
+    "mechanical_formatting": {
+      "regex": "\\d+\\)\\s+[A-Z]",
+      "weight": 2.5,
+      "description": "Mechanical numbered list formatting"
+    },
+    "excessive_exclamation": {
+      "char": "!",
+      "threshold_per_1000_words": 5,
+      "weight": 1.5,
+      "description": "Overuse of exclamation marks"
+    }
+  },
+  "scoring": {
+    "base_threshold": 0.3,
+    "max_penalty": 0.8,
+    "normalization_factor": 10.0
+  }
+}

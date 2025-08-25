@@ -79,7 +79,7 @@ const WordTable: React.FC<WordTableProps> = ({ words, hideControls = false }) =>
   const getScoreCategory = (score: number): string => {
     if (score >= 0.8) return 'Very High';
     if (score >= 0.6) return 'High';
-    if (score >= 0.4) return 'Medium';
+    if (score >= 0.6) return 'Medium'; // Changed from 0.4 to 0.6
     if (score >= 0.2) return 'Low';
     return 'Very Low';
   };
@@ -93,7 +93,7 @@ const WordTable: React.FC<WordTableProps> = ({ words, hideControls = false }) =>
 
   const getScoreColor = (score: number): string => {
     if (score >= 0.7) return 'high';
-    if (score >= 0.4) return 'medium';
+    if (score >= 0.6) return 'medium'; // Changed from 0.4 to 0.6
     return 'low';
   };
 
@@ -194,7 +194,7 @@ const WordTable: React.FC<WordTableProps> = ({ words, hideControls = false }) =>
                     </td>
                     {!hideControls && (
                       <td className="category-cell">
-                        <span className={`category-badge ${word.average_score >= 0.7 ? 'high' : word.average_score >= 0.4 ? 'medium' : 'low'}`}>
+                        <span className={`category-badge ${word.average_score >= 0.7 ? 'high' : word.average_score >= 0.6 ? 'medium' : 'low'}`}>
                           {getScoreCategory(word.average_score)}
                         </span>
                       </td>

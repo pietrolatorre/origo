@@ -1,0 +1,120 @@
+{
+  "formality_inconsistencies": {
+    "excessive_contractions": {
+      "patterns": ["it's", "that's", "we'll", "they'll", "won't", "can't", "shouldn't", "wouldn't", "couldn't", "didn't"],
+      "weight": 1.5,
+      "threshold_per_100_words": 8
+    },
+    "overly_formal_phrases": {
+      "patterns": [
+        "one must consider",
+        "it is imperative that",
+        "furthermore, it should be noted",
+        "it behooves us to",
+        "henceforth",
+        "aforementioned",
+        "subsequent to",
+        "in accordance with",
+        "with regard to",
+        "pursuant to"
+      ],
+      "weight": 2.5
+    },
+    "mixed_register_markers": {
+      "casual": {
+        "patterns": ["kinda", "sorta", "basically", "actually", "like", "you know", "I mean", "pretty much", "whatever"],
+        "weight": 2.0
+      },
+      "academic": {
+        "patterns": ["henceforth", "aforementioned", "subsequent", "thereby", "wherein", "herein", "nonetheless"],
+        "weight": 2.0
+      }
+    }
+  },
+  "emotional_variance_markers": {
+    "low_variance_indicators": {
+      "patterns": [
+        "consistently neutral tone",
+        "lack of personal opinion markers",
+        "absence of emotional adjectives",
+        "uniform emotional intensity"
+      ],
+      "weight": 2.0,
+      "description": "Indicators of artificially consistent emotional tone"
+    },
+    "high_variance_expected": {
+      "patterns": [
+        "personal anecdotes",
+        "opinion markers",
+        "emotional responses",
+        "subjective evaluations"
+      ],
+      "weight": -1.0,
+      "description": "Natural emotional variance indicators"
+    },
+    "emotional_adjectives": {
+      "positive": ["amazing", "fantastic", "incredible", "wonderful", "excellent", "outstanding"],
+      "negative": ["terrible", "awful", "horrible", "disgusting", "appalling", "dreadful"],
+      "neutral": ["interesting", "notable", "significant", "considerable", "substantial"]
+    }
+  },
+  "naturalness_patterns": {
+    "unnatural_constructions": {
+      "patterns": [
+        "as we navigate",
+        "it behooves us to",
+        "in the realm of",
+        "serves as a testament to",
+        "stands as a beacon of",
+        "epitomizes the essence of",
+        "represents a paradigm shift",
+        "underscores the importance of"
+      ],
+      "weight": 3.0
+    },
+    "natural_constructions": {
+      "patterns": [
+        "honestly",
+        "frankly",
+        "to be fair",
+        "I think",
+        "in my opinion",
+        "personally",
+        "from my experience",
+        "as far as I know",
+        "if you ask me"
+      ],
+      "weight": -1.5
+    },
+    "hedge_words": {
+      "artificial": ["arguably", "presumably", "ostensibly", "purportedly", "allegedly"],
+      "natural": ["maybe", "probably", "I guess", "sort of", "kind of"],
+      "weight_artificial": 2.0,
+      "weight_natural": -1.0
+    }
+  },
+  "discourse_markers": {
+    "mechanical_transitions": {
+      "patterns": [
+        "firstly", "secondly", "thirdly", "finally",
+        "in addition", "furthermore", "moreover", "additionally",
+        "on the contrary", "conversely", "nevertheless", "nonetheless"
+      ],
+      "weight": 1.8,
+      "threshold_density": 0.02
+    },
+    "natural_transitions": {
+      "patterns": [
+        "but", "so", "then", "now", "well", "anyway", "actually",
+        "by the way", "speaking of which", "that reminds me"
+      ],
+      "weight": -1.0
+    }
+  },
+  "scoring": {
+    "base_score": 0.5,
+    "max_adjustment": 0.4,
+    "normalization_factor": 5.0,
+    "penalty_threshold": 0.1
+  }
+}

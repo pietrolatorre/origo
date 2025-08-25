@@ -19,13 +19,13 @@ export const ScoreDisplay: React.FC<ScoreDisplayProps> = ({
 }) => {
   const getScoreColor = (score: number): string => {
     if (score >= 0.7) return '#ef4444'; // red
-    if (score >= 0.4) return '#f59e0b'; // yellow
+    if (score >= 0.6) return '#f59e0b'; // yellow - changed from 0.4 to 0.6
     return '#10b981'; // green
   };
 
   const getScoreClass = (score: number): string => {
     if (score >= 0.7) return 'high';
-    if (score >= 0.4) return 'medium';
+    if (score >= 0.6) return 'medium'; // changed from 0.4 to 0.6
     return 'low';
   };
 

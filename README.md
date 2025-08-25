@@ -162,39 +162,88 @@ Analyzes text for AI-generated content detection.
 ### Analysis Module Classes
 
 #### 1. PerplexityAnalyzer (`backend/analysis/perplexity.py`)
-**Status**: ✅ **Fully Implemented & Production Ready**
+**Status**: ✅ **Enhanced & Production Ready** (Updated with Advanced Detection)
 
-**Purpose**: Calculates text perplexity using GPT-2 language model to detect AI-generated patterns.
+**Purpose**: Multi-dimensional perplexity analysis combining GPT-2 language model scoring with stylistic pattern detection and register authenticity analysis.
+
+**Enhanced Components**:
+- **Base Perplexity** (40%): Core GPT-2 perplexity calculation
+- **Stylistic Patterns** (30%): AI vocabulary and phrasal pattern detection
+- **Register Authenticity** (30%): Formality consistency and naturalness analysis
 
 **Key Methods**:
+- `analyze_text(text: str) -> Dict`: **NEW** - Comprehensive analysis combining all components
 - `calculate_perplexity(text: str) -> float`: Core perplexity calculation with normalization
+- `analyze_stylistic_patterns(text: str) -> Dict`: **NEW** - Detects AI-specific vocabulary and phrases
+- `analyze_register_authenticity(text: str) -> Dict`: **NEW** - Analyzes formality and naturalness markers
 - `analyze_sentences(sentences: List[str]) -> List[Dict]`: Sentence-level analysis with word breakdown
 - `analyze_paragraphs(text: str) -> List[Dict]`: Paragraph-level analysis with sentence breakdown
 - `get_word_impact_analysis(text: str) -> Dict`: Word-level impact analysis for highlighting
 
-**AI Detection Logic**: Lower perplexity scores indicate text patterns similar to GPT-2's training data, suggesting AI generation. Scores are normalized to 0-1 scale where higher values indicate higher AI probability.
+**Stylistic Pattern Detection**:
+- **Suspicious Vocabulary**: Detects AI-preferred verbs ("delve", "leverage", "underscore")
+- **Formulaic Phrases**: Identifies mechanical transitions ("it's worth noting that", "in essence")
+- **Punctuation Patterns**: Analyzes Oxford comma overuse, em dash abuse, mechanical formatting
+- **Transition Constructs**: Detects artificial structuring ("firstly...secondly...finally")
+
+**Register Authenticity Analysis**:
+- **Formality Inconsistencies**: Detects mixed casual/academic registers
+- **Emotional Variance**: Analyzes unnatural emotional consistency
+- **Naturalness Patterns**: Identifies artificial vs. natural language constructions
+- **Discourse Markers**: Detects mechanical vs. natural transitions
+
+**Configuration Files**:
+- `data/perplexity/llm_red_flags.json`: Suspicious vocabulary patterns
+- `data/perplexity/punctuation_patterns.json`: Punctuation analysis rules
+- `data/perplexity/register_authenticity.json`: Formality and naturalness markers
+
+**AI Detection Logic**: Enhanced multi-dimensional scoring where base perplexity, stylistic patterns, and register authenticity are weighted together. Higher combined scores indicate stronger AI probability.
 
 **Development Notes**: 
+- ✅ **Enhanced with advanced pattern recognition**
+- ✅ **Configuration-driven detection rules**
+- ✅ **Weighted component scoring system**
+- ✅ **Comprehensive linguistic analysis**
 - Uses transformer models for high accuracy
 - Implements proper tokenization and device management
 - Includes comprehensive error handling
 - Memory efficient with model caching
 
 #### 2. BurstinessAnalyzer (`backend/analysis/burstiness.py`)
-**Status**: ✅ **Fully Implemented & Production Ready**
+**Status**: ✅ **Enhanced & Production Ready** (Updated with Structural Analysis)
 
-**Purpose**: Analyzes variation in sentence structure, length, and patterns. AI text often shows more uniform patterns.
+**Purpose**: Multi-dimensional burstiness analysis combining sentence variation patterns with structural consistency detection.
+
+**Enhanced Components**:
+- **Base Burstiness** (60%): Traditional sentence length and complexity variation
+- **Structural Consistency** (40%): Detects artificial document structure patterns
 
 **Key Methods**:
+- `analyze_text(text: str) -> Dict`: **ENHANCED** - Comprehensive analysis combining base and structural components
 - `calculate_sentence_length_variation(sentences: List[str]) -> float`: Analyzes sentence length diversity
 - `calculate_syntactic_complexity_variation(sentences: List[str]) -> float`: Examines structural complexity patterns
 - `calculate_sentence_start_variation(sentences: List[str]) -> float`: Detects repetitive sentence openings
 - `calculate_punctuation_patterns(text: str) -> float`: Analyzes punctuation usage diversity
-- `analyze_text(text: str) -> Dict`: Comprehensive burstiness analysis
+- `analyze_structural_consistency(text: str) -> Dict`: **NEW** - Detects artificial document structure
 
-**AI Detection Logic**: Uniform patterns (low burstiness) suggest AI generation. Calculates coefficient of variation and pattern diversity metrics.
+**Structural Consistency Detection**:
+- **Paragraph Uniformity**: Detects unnaturally uniform paragraph lengths
+- **Sentence Symmetry**: Identifies mechanical sentence structure patterns
+- **Section Balance**: Analyzes artificial intro/body/conclusion ratios
+- **Mechanical Patterns**: Detects overuse of transition phrases and formulaic structures
+- **Rhythmic Patterns**: Identifies artificially consistent sentence rhythm
+- **Formatting Consistency**: Detects unnaturally perfect punctuation and formatting
+
+**Configuration Files**:
+- `data/burstiness/structural_patterns.json`: Structural uniformity detection rules
+
+**AI Detection Logic**: Enhanced scoring where base burstiness metrics are combined with structural consistency analysis. Uniform patterns in both dimensions indicate higher AI probability.
 
 **Development Notes**:
+- ✅ **Enhanced with structural pattern detection**
+- ✅ **Configuration-driven uniformity analysis**
+- ✅ **Weighted component scoring system**
+- ✅ **Advanced linguistic metrics**
 - Implements multiple linguistic metrics
 - Weighted scoring system for different pattern types
 - Statistical analysis of text variation
@@ -243,24 +292,66 @@ Analyzes text for AI-generated content detection.
 - Sophisticated pattern recognition algorithms
 
 #### 5. ScoreFusion (`backend/analysis/scoring.py`)
-**Status**: ✅ **Fully Implemented & Production Ready**
+**Status**: ✅ **Enhanced & Production Ready** (Updated Scoring Algorithm)
 
-**Purpose**: Combines multiple analysis heuristics into comprehensive AI detection scores with intelligent weighting.
+**Purpose**: Combines multiple analysis heuristics using configurable arithmetic mean weighting for optimal AI detection accuracy.
+
+**Enhanced Features**:
+- **Configuration-Driven Weights**: Loads scoring weights from `data/weights_config.json`
+- **Simple Arithmetic Mean**: Equal weighting approach (25% each component)
+- **Enhanced Analyzer Integration**: Works with extended perplexity and burstiness analyzers
+- **Feature Flag Support**: Configurable enable/disable of enhanced features
 
 **Key Methods**:
-- `analyze_text_comprehensive(text: str) -> Dict`: Main analysis orchestrator
+- `analyze_text_comprehensive(text: str) -> Dict`: **ENHANCED** - Main analysis orchestrator with extended results
 - `validate_weights()`: Ensures scoring weights sum to 1.0
-- `_analyze_paragraphs(text: str) -> List[Dict]`: Paragraph-level scoring fusion
-- `_analyze_sentences(sentences: List[str]) -> List[Dict]`: Sentence-level scoring fusion
+- `_analyze_paragraphs(text: str) -> List[Dict]`: **ENHANCED** - Uses extended analyzers
+- `_analyze_sentences(sentences: List[str]) -> List[Dict]`: **ENHANCED** - Uses extended analyzers
 - `_analyze_words(text: str) -> Dict`: Word-level impact analysis
+- `_extract_score(result: Any, analysis_type: str) -> float`: **NEW** - Handles both enhanced and legacy formats
 
-**Scoring Weights** (Production Configuration):
-- **Perplexity**: 40% (highest weight - most reliable)
-- **Burstiness**: 20% (structural patterns)
-- **N-gram Similarity**: 20% (repetition patterns)
-- **Semantic Coherence**: 20% (semantic patterns)
+**Scoring Weights** (Enhanced Configuration):
+- **Perplexity**: 25% (equal weight with enhanced sub-components)
+- **Burstiness**: 25% (equal weight with enhanced sub-components)
+- **N-gram Similarity**: 25% (equal weight)
+- **Semantic Coherence**: 25% (equal weight)
+
+**Enhanced Response Structure**:
+```json
+{
+  "overall_score": 0.78,
+  "global_scores": { /* ... */ },
+  "enhanced_analysis": {
+    "perplexity_details": {
+      "overall_score": 0.83,
+      "base_perplexity": 0.80,
+      "stylistic_patterns": { /* detailed breakdown */ },
+      "register_authenticity": { /* detailed breakdown */ }
+    },
+    "burstiness_details": {
+      "overall_score": 0.72,
+      "base_burstiness": 0.70,
+      "structural_consistency": { /* detailed breakdown */ }
+    }
+  },
+  "analysis_metadata": {
+    "enhanced_features_enabled": {
+      "stylistic_analysis": true,
+      "register_analysis": true,
+      "structural_analysis": true
+    }
+  }
+}
+```
+
+**Configuration Files**:
+- `data/weights_config.json`: Scoring weights and feature flags
 
 **Development Notes**:
+- ✅ **Enhanced with configuration-driven scoring**
+- ✅ **Supports both enhanced and legacy analyzer formats**
+- ✅ **Feature flag system for controlled rollout**
+- ✅ **Detailed enhanced analysis reporting**
 - Implements weighted fusion algorithm
 - Comprehensive error handling for each analyzer
 - Hierarchical analysis (text → paragraph → sentence → word)
@@ -405,31 +496,123 @@ The system provides analysis at multiple granularities:
 
 This hierarchical approach enables precise identification of AI-generated content at different text levels, supporting detailed user interface highlighting and explanations.
 
-## 🔧 Analysis Components
+## 📋 Enhanced Configuration System
 
-### 1. Perplexity Analysis
-- Uses GPT-2 language model
-- Measures text predictability
-- Lower perplexity suggests AI generation
-- **Weight**: 40%
+### Data-Driven Analysis Configuration
 
-### 2. Burstiness Analysis
-- Analyzes sentence length variation
-- Examines syntactic complexity patterns
-- Uniform patterns indicate AI text
-- **Weight**: 20%
+Origo now uses a sophisticated configuration system that allows fine-tuning of AI detection parameters without code changes:
 
-### 3. Semantic Coherence
-- Uses Sentence-BERT embeddings
-- Measures semantic flow consistency
-- Extreme coherence may suggest AI
-- **Weight**: 20%
+**Configuration Files Structure**:
+```
+backend/data/
+├── weights_config.json          # Global scoring weights and feature flags
+├── perplexity/
+│   ├── llm_red_flags.json      # AI-specific vocabulary patterns
+│   ├── punctuation_patterns.json # Suspicious punctuation analysis
+│   └── register_authenticity.json # Formality and naturalness markers
+└── burstiness/
+    └── structural_patterns.json # Document structure uniformity detection
+```
 
-### 4. N-gram Similarity
-- Detects repetitive patterns
-- Analyzes n-gram frequencies
-- High repetition common in AI text
-- **Weight**: 20%
+### Key Configuration Features
+
+#### 1. Scoring Weight Configuration (`weights_config.json`)
+```json
+{
+  "scoring_weights": {
+    "perplexity": 0.25,        // Equal arithmetic mean weighting
+    "burstiness": 0.25,        // As specified in MODIFICHE.md
+    "semantic_coherence": 0.25,
+    "ngram_similarity": 0.25
+  },
+  "perplexity_components": {
+    "base_perplexity": 0.4,    // Component weighting within perplexity
+    "stylistic_patterns": 0.3,
+    "register_authenticity": 0.3
+  },
+  "burstiness_components": {
+    "base_burstiness": 0.6,     // Component weighting within burstiness
+    "structural_consistency": 0.4
+  },
+  "feature_flags": {
+    "enable_enhanced_perplexity": true,
+    "enable_enhanced_burstiness": true,
+    "enable_stylistic_analysis": true,
+    "enable_register_analysis": true,
+    "enable_structural_analysis": true
+  }
+}
+```
+
+#### 2. AI Vocabulary Detection (`llm_red_flags.json`)
+- **Suspicious Verbs**: "delve", "leverage", "underscore", "foster", "transcend"
+- **Suspicious Modifiers**: "thought-provoking", "nuanced", "multifaceted", "seamless"
+- **Formulaic Phrases**: "it's worth noting that", "in essence", "at the end of the day"
+- **Transition Constructs**: "firstly...secondly...finally" patterns
+- **Weighted Scoring**: Different weights for different pattern types
+
+#### 3. Structural Pattern Detection (`structural_patterns.json`)
+- **Paragraph Uniformity**: Variance thresholds for suspicious consistency
+- **Sentence Symmetry**: Repetition thresholds for mechanical patterns
+- **Mechanical Transitions**: Overuse detection for formulaic phrases
+- **Rhythmic Analysis**: Syllable variance thresholds for artificial rhythm
+
+#### 4. Register Authenticity Analysis (`register_authenticity.json`)
+- **Formality Mixing**: Detection of casual/academic register inconsistencies
+- **Emotional Variance**: Thresholds for unnatural emotional consistency
+- **Naturalness Markers**: Artificial vs. natural language construction patterns
+- **Discourse Analysis**: Mechanical vs. natural transition patterns
+
+### Configuration Benefits
+
+✅ **Flexible Tuning**: Adjust detection sensitivity without code changes
+✅ **Rapid Deployment**: Update detection rules via configuration files
+✅ **A/B Testing**: Feature flags enable controlled rollout of enhancements
+✅ **Domain Adaptation**: Customize detection for specific text types
+✅ **Transparent Rules**: Human-readable detection criteria
+✅ **Version Control**: Track detection rule changes over time
+
+## 🔧 Enhanced Analysis Components
+
+### 1. Enhanced Perplexity Analysis
+- **Base Analysis**: Uses GPT-2 language model for predictability measurement
+- **Stylistic Patterns**: Detects AI-specific vocabulary and formulaic phrases
+- **Register Authenticity**: Analyzes formality consistency and naturalness markers
+- **Weight**: 25% (equal weighting as per MODIFICHE.md)
+
+### 2. Enhanced Burstiness Analysis
+- **Base Analysis**: Analyzes sentence length and complexity variation
+- **Structural Consistency**: Detects artificial document structure patterns
+- **Mechanical Detection**: Identifies formulaic transitions and formatting
+- **Weight**: 25% (equal weighting)
+
+### 3. Semantic Coherence Analysis
+- Uses Sentence-BERT embeddings for semantic flow analysis
+- Measures semantic consistency and topic coherence
+- Detects extreme coherence patterns suggesting AI generation
+- **Weight**: 25% (equal weighting)
+
+### 4. N-gram Similarity Analysis
+- Detects repetitive patterns and phrase reuse
+- Analyzes n-gram frequencies and lexical diversity
+- Identifies mechanical language patterns common in AI text
+- **Weight**: 25% (equal weighting)
+
+### Enhanced Detection Capabilities
+
+**Multi-Dimensional Analysis**:
+- ✅ **Vocabulary Analysis**: AI-specific word usage patterns
+- ✅ **Syntactic Analysis**: Mechanical sentence structure detection
+- ✅ **Semantic Analysis**: Flow and coherence pattern recognition
+- ✅ **Stylistic Analysis**: Register and formality consistency
+- ✅ **Structural Analysis**: Document organization pattern detection
+- ✅ **Rhythmic Analysis**: Artificial rhythm and pacing detection
+
+**Configuration-Driven Detection**:
+- ✅ **Customizable Thresholds**: Adjust sensitivity per use case
+- ✅ **Feature Toggles**: Enable/disable specific detection methods
+- ✅ **Weight Adjustment**: Fine-tune component importance
+- ✅ **Pattern Updates**: Update detection rules without code changes
 
 ## 🎨 User Interface
 
@@ -441,8 +624,8 @@ This hierarchical approach enables precise identification of AI-generated conten
 - **Word Table**: Sortable table with word-level insights
 
 ### Color Coding
-- 🟢 **Green**: Low AI probability (0-40%)
-- 🟡 **Yellow**: Medium AI probability (40-70%)
+- 🟢 **Green**: Low AI probability (0-60%)
+- 🟡 **Yellow**: Medium AI probability (60-70%)
 - 🔴 **Red**: High AI probability (70-100%)
 
 ## 🐳 Docker Deployment
@@ -543,6 +726,14 @@ origo/
 ├── backend/              # Python FastAPI application
 │   ├── analysis/         # AI detection modules
 │   ├── utils/           # Utilities and model management
+│   ├── data/            # 🆕 Configuration files for enhanced detection
+│   │   ├── perplexity/  # Stylistic and register analysis configs
+│   │   │   ├── llm_red_flags.json
+│   │   │   ├── punctuation_patterns.json
+│   │   │   └── register_authenticity.json
+│   │   ├── burstiness/  # Structural consistency configs
+│   │   │   └── structural_patterns.json
+│   │   └── weights_config.json  # Global scoring configuration
 │   ├── main.py          # FastAPI app entry point
 │   └── requirements.txt # Python dependencies
 ├── frontend/            # React TypeScript application

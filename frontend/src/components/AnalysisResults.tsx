@@ -18,11 +18,11 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({ result }) => {
 
   const getScoreColor = (score: number): string => {
     if (score >= 0.7) return 'high';
-    if (score >= 0.4) return 'medium';
+    if (score >= 0.6) return 'medium'; // Changed from 0.4 to 0.6
     return 'low';
   };
 
-  const isSignificantScore = (score: number): boolean => score >= 0.4;
+  const isSignificantScore = (score: number): boolean => score >= 0.6;  // Changed from 0.4 to 0.6
 
   // Filter and sort paragraphs with significant scores (yellow/red) - sorted by score descending
   const significantParagraphs = result.paragraphs

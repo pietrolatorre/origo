@@ -56,7 +56,7 @@ export const MetricsBreakdown: React.FC<MetricsBreakdownProps> = ({ scores }) =>
 
   const getScoreColor = (score: number): string => {
     if (score >= 0.7) return 'high';
-    if (score >= 0.4) return 'medium';
+    if (score >= 0.6) return 'medium'; // Changed from 0.4 to 0.6
     return 'low';
   };
 

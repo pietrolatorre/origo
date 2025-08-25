@@ -35,7 +35,7 @@ export const HighlightedText: React.FC<HighlightedTextProps> = ({ paragraphs }) 
 
   const getHighlightClass = (score: number): string => {
     if (score >= 0.7) return 'highlight-high';
-    if (score >= 0.4) return 'highlight-medium';
+    if (score >= 0.6) return 'highlight-medium'; // Changed from 0.4 to 0.6
     return 'highlight-low';
   };
 

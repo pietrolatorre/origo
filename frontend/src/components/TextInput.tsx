@@ -4,19 +4,25 @@
 
 import React, { useState, useCallback, useEffect } from 'react';
 import { Send, Trash2, Loader2, ClipboardPaste, Globe } from 'lucide-react';
+import { AnalysisDimensions } from './AnalysisDimensions';
+import type { DimensionToggleSettings } from '../types/analysis';
 
 interface TextInputProps {
   onAnalyze: (text: string) => void;
   onClear: () => void;
   isAnalyzing: boolean;
   error: string | null;
+  dimensions: DimensionToggleSettings;
+  onDimensionToggle: (dimensionId: keyof DimensionToggleSettings, enabled: boolean) => void;
 }
 
 export const TextInput: React.FC<TextInputProps> = ({
   onAnalyze,
   onClear,
   isAnalyzing,
-  error
+  error,
+  dimensions,
+  onDimensionToggle
 }) => {
   const [text, setText] = useState('');
   const [showPasteButton, setShowPasteButton] = useState(false);
@@ -120,6 +126,11 @@ export const TextInput: React.FC<TextInputProps> = ({
             </button>
           )}
         </div>
+        
+        <AnalysisDimensions 
+          dimensions={dimensions}
+          onDimensionToggle={onDimensionToggle}
+        />
         
         <div className="input-controls">
           <div className="control-buttons">

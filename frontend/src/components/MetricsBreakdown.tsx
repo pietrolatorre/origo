@@ -105,17 +105,18 @@ export const MetricsBreakdown: React.FC<MetricsBreakdownProps> = ({
 
   return (
     <div className="metrics-breakdown">
-      <div className="metrics-grid">
+      <div className="metrics-grid-2x2">
         {Object.entries(scores).map(([metric, score]) => {
           const weight = DEFAULT_WEIGHTS[metric] || 0.25;
-          const scoreColor = getScoreColor(score);
-          const isEnabled = isDimensionEnabled(metric);
+          const isEnabled = score !== null && isDimensionEnabled(metric);
+          const scoreValue = score ?? 0;
+          const scoreColor = getScoreColor(scoreValue);
           const isClickable = onDimensionClick && isEnabled;
           
           return (
             <div 
               key={metric} 
-              className={`metric-dimension ${
+              className={`metric-dimension-2x2 ${
                 isClickable ? 'clickable' : ''
               } ${
                 !isEnabled ? 'disabled' : ''
@@ -129,23 +130,23 @@ export const MetricsBreakdown: React.FC<MetricsBreakdownProps> = ({
                     : undefined
               }
             >
-              <div className="metric-header-centered">
-                <div className="metric-icon-centered">
+              <div className="metric-header-row">
+                <div className="metric-icon">
                   {getMetricIcon(metric)}
                 </div>
-                <h5 className="metric-title-centered">{getMetricTitle(metric)}</h5>
+                <h5 className="metric-title">{getMetricTitle(metric)}</h5>
               </div>
               <div className="metric-content-below">
-                <div className="metric-description-left">
+                <div className="metric-description">
                   <p>{getMetricExplanation(metric)}</p>
                   {!isEnabled && (
                     <p className="disabled-notice">This dimension was excluded from analysis</p>
                   )}
                 </div>
-                <div className="metric-score-right">
+                <div className="metric-score-weight">
                   <div className={`score-circle ${isEnabled ? scoreColor : 'disabled'}`}>
                     <span className={`score-percentage ${isEnabled ? scoreColor : 'disabled'}`}>
-                      {isEnabled ? Math.round(score * 100) : '--'}%
+                      {isEnabled ? Math.round(scoreValue * 100) : '--'}%
                     </span>
                   </div>
                   <span className="metric-weight">Weight: {Math.round(weight * 100)}%</span>

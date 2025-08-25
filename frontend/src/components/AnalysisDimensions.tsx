@@ -58,11 +58,6 @@ export const AnalysisDimensions: React.FC<AnalysisDimensionsProps> = ({
 }) => {
   return (
     <div className="analysis-dimensions">
-      <div className="dimensions-header">
-        <h3>Analysis Dimensions</h3>
-        <span className="dimensions-subtitle">Select which dimensions to include in the analysis</span>
-      </div>
-      
       <div className="dimensions-grid">
         {ANALYSIS_DIMENSIONS.map((dimension) => {
           const Icon = getIcon(dimension.icon);
@@ -91,10 +86,6 @@ export const AnalysisDimensions: React.FC<AnalysisDimensionsProps> = ({
                   </div>
                   <h4 className="dimension-name">{dimension.name}</h4>
                 </div>
-                
-                <p className="dimension-description">
-                  {dimension.description}
-                </p>
               </div>
             </div>
           );

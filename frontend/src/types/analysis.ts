@@ -25,10 +25,10 @@ export interface ParagraphAnalysis {
 }
 
 export interface GlobalScores {
-  perplexity: number;
-  burstiness: number;
-  semantic_coherence: number;
-  ngram_similarity: number;
+  perplexity: number | null;
+  burstiness: number | null;
+  semantic_coherence: number | null;
+  ngram_similarity: number | null;
 }
 
 // Enhanced N-gram analysis structures

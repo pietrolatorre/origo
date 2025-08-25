@@ -77,7 +77,7 @@ class TextAnalysisRequest(BaseModel):
 class TextAnalysisResponse(BaseModel):
     """Response model for text analysis results"""
     overall_score: float = Field(..., description="Overall AI detection score (0-1, higher = more likely AI)")
-    global_scores: Dict[str, float] = Field(..., description="Individual analysis component scores")
+    global_scores: Dict[str, Optional[float]] = Field(..., description="Individual analysis component scores (null for disabled dimensions)")
     enhanced_analysis: Optional[Dict[str, Any]] = Field(default=None, description="Enhanced analysis details with component breakdowns")
     paragraphs: list = Field(..., description="Paragraph-level analysis with sentences and words")
     word_analysis: Dict[str, Any] = Field(..., description="Word-level impact analysis")

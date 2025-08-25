@@ -2,7 +2,6 @@ import { useState, useCallback } from 'react';
 import './App.css';
 import { TextInput } from './components/TextInput';
 import { AnalysisResults } from './components/AnalysisResults';
-import { AnalysisDimensions } from './components/AnalysisDimensions';
 import { Header } from './components/Header';
 import { Disclaimer } from './components/Disclaimer';
 import { analyzeText } from './services/api';
@@ -62,21 +61,30 @@ function App() {
             onClear={handleClear}
             isAnalyzing={isAnalyzing}
             error={error}
-          />
-          
-          <AnalysisDimensions 
             dimensions={dimensions}
             onDimensionToggle={handleDimensionToggle}
           />
           
-          {analysisResult && (
-            <AnalysisResults 
-              result={analysisResult} 
-              enabledDimensions={dimensions}
-            />
-          )}
+          <div className={`analysis-results-container ${isAnalyzing ? 'results-blocked' : ''}`}>
+            {analysisResult && (
+              <AnalysisResults 
+                result={analysisResult} 
+                enabledDimensions={dimensions}
+              />
+            )}
+          </div>
         </div>
       </main>
+      
+      {isAnalyzing && (
+        <div className="loading-overlay">
+          <div className="loading-content">
+            <div className="loading-spinner"></div>
+            <div className="loading-text">Analyzing text...</div>
+            <p className="loading-subtext">Please wait while we process your analysis</p>
+          </div>
+        </div>
+      )}
       
       <Disclaimer />
     </div>

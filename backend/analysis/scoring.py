@@ -147,23 +147,27 @@ class ScoreFusion:
                 # Fallback to sequential analysis
                 analysis_results = self._run_sequential_analysis(text, enabled_dimensions)
             
-            # Extract scores from results using new aggregation method
-            scores = {
-                'perplexity': self._extract_score_with_aggregation(analysis_results.get('perplexity', {}), 'perplexity') if enabled_dimensions.get('perplexity', True) else 0.0,
-                'burstiness': self._extract_score_with_aggregation(analysis_results.get('burstiness', {}), 'burstiness') if enabled_dimensions.get('burstiness', True) else 0.0,
-                'ngram_similarity': self._extract_score_with_aggregation(analysis_results.get('ngram', {}), 'ngram') if enabled_dimensions.get('ngram_similarity', True) else 0.0,
-                'semantic_coherence': self._extract_score_with_aggregation(analysis_results.get('semantic', {}), 'semantic') if enabled_dimensions.get('semantic_coherence', True) else 0.0
-            }
+            # Extract scores from results using new aggregation method (only for enabled dimensions)
+            scores = {}
+            if enabled_dimensions.get('perplexity', True):
+                scores['perplexity'] = self._extract_score_with_aggregation(analysis_results.get('perplexity', {}), 'perplexity')
+            if enabled_dimensions.get('burstiness', True):
+                scores['burstiness'] = self._extract_score_with_aggregation(analysis_results.get('burstiness', {}), 'burstiness')
+            if enabled_dimensions.get('ngram_similarity', True):
+                scores['ngram_similarity'] = self._extract_score_with_aggregation(analysis_results.get('ngram', {}), 'ngram')
+            if enabled_dimensions.get('semantic_coherence', True):
+                scores['semantic_coherence'] = self._extract_score_with_aggregation(analysis_results.get('semantic', {}), 'semantic')
             
             # Calculate weighted overall score only for enabled dimensions
             self.validate_weights()
-            enabled_weights = {k: v for k, v in self.weights.items() if enabled_dimensions.get(k.replace('_similarity', '').replace('_coherence', ''), True)}
+            enabled_scores = {k: v for k, v in scores.items() if k in scores}
+            enabled_weights = {k: v for k, v in self.weights.items() if k in enabled_scores}
             
             # Normalize weights for enabled dimensions
             total_enabled_weight = sum(enabled_weights.values())
-            if total_enabled_weight > 0:
+            if total_enabled_weight > 0 and enabled_scores:
                 normalized_weights = {k: v / total_enabled_weight for k, v in enabled_weights.items()}
-                overall_score = sum(scores[key] * normalized_weights.get(key, 0) for key in scores if scores[key] > 0)
+                overall_score = sum(enabled_scores[key] * normalized_weights.get(key, 0) for key in enabled_scores)
             else:
                 overall_score = 0.5  # Default when no dimensions enabled
             
@@ -178,16 +182,16 @@ class ScoreFusion:
             result = {
                 'overall_score': round(overall_score, 3),
                 'global_scores': {
-                    'perplexity': round(scores['perplexity'], 3),
-                    'burstiness': round(scores['burstiness'], 3),
-                    'semantic_coherence': round(scores['semantic_coherence'], 3),
-                    'ngram_similarity': round(scores['ngram_similarity'], 3)
+                    'perplexity': round(scores.get('perplexity', 0), 3) if enabled_dimensions.get('perplexity', True) else None,
+                    'burstiness': round(scores.get('burstiness', 0), 3) if enabled_dimensions.get('burstiness', True) else None,
+                    'semantic_coherence': round(scores.get('semantic_coherence', 0), 3) if enabled_dimensions.get('semantic_coherence', True) else None,
+                    'ngram_similarity': round(scores.get('ngram_similarity', 0), 3) if enabled_dimensions.get('ngram_similarity', True) else None
                 },
                 'enhanced_analysis': {
-                    'perplexity_details': analysis_results.get('perplexity', {'overall_score': scores['perplexity']}),
-                    'burstiness_details': analysis_results.get('burstiness', {'overall_score': scores['burstiness']}),
-                    'ngram_details': analysis_results.get('ngram', {'overall_score': scores['ngram_similarity']}),
-                    'semantic_details': analysis_results.get('semantic', {'overall_score': scores['semantic_coherence']})
+                    'perplexity_details': analysis_results.get('perplexity', {'overall_score': scores.get('perplexity', 0)}) if enabled_dimensions.get('perplexity', True) else None,
+                    'burstiness_details': analysis_results.get('burstiness', {'overall_score': scores.get('burstiness', 0)}) if enabled_dimensions.get('burstiness', True) else None,
+                    'ngram_details': analysis_results.get('ngram', {'overall_score': scores.get('ngram_similarity', 0)}) if enabled_dimensions.get('ngram_similarity', True) else None,
+                    'semantic_details': analysis_results.get('semantic', {'overall_score': scores.get('semantic_coherence', 0)}) if enabled_dimensions.get('semantic_coherence', True) else None
                 },
                 'paragraphs': paragraphs_analysis,
                 'word_analysis': word_analysis,

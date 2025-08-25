@@ -1131,3 +1131,398 @@ body {
     padding: 0.5rem 0.25rem;
   }
 }
+
+/* Analysis Modals Styles */
+.analysis-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.7);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.modal-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  cursor: pointer;
+}
+
+.modal-content {
+  background: white;
+  border-radius: 12px;
+  max-width: 800px;
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+  position: relative;
+  z-index: 1001;
+  box-shadow: 0 20px 40px rgba(0, 0, 0, 0.3);
+}
+
+.modal-header {
+  padding: 20px 24px 16px;
+  border-bottom: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.modal-header h3 {
+  margin: 0;
+  color: #1a202c;
+  font-size: 1.25rem;
+  font-weight: 600;
+  flex-grow: 1;
+}
+
+.modal-body {
+  padding: 20px 24px;
+}
+
+.modal-description {
+  color: #4a5568;
+  margin-bottom: 20px;
+  font-size: 0.95rem;
+  line-height: 1.5;
+}
+
+/* Insights List Styles */
+.insights-list,
+.clusters-list,
+.semantic-insights-list {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  margin-bottom: 20px;
+}
+
+.insight-item,
+.cluster-item,
+.semantic-insight-item {
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  padding: 16px;
+  background: #f7fafc;
+}
+
+.insight-content {
+  flex-grow: 1;
+}
+
+.insight-text,
+.insight-description {
+  font-weight: 500;
+  color: #2d3748;
+  margin-bottom: 8px;
+}
+
+.insight-impact,
+.insight-interpretation,
+.insight-analysis {
+  color: #4a5568;
+  font-size: 0.9rem;
+  margin-bottom: 4px;
+}
+
+.insight-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+/* Cluster Styles */
+.cluster-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.cluster-header h4 {
+  margin: 0;
+  color: #1a202c;
+  font-size: 1.1rem;
+  flex-grow: 1;
+}
+
+.cluster-pattern {
+  color: #4a5568;
+  margin-bottom: 12px;
+  font-size: 0.9rem;
+}
+
+.cluster-sentences {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.sentence-example {
+  padding: 8px 12px;
+  border-radius: 6px;
+  font-size: 0.9rem;
+  border-left: 3px solid;
+}
+
+.sentence-example.low {
+  background-color: #f0fff4;
+  border-left-color: #38a169;
+  color: #2d3748;
+}
+
+.sentence-example.medium {
+  background-color: #fffbf0;
+  border-left-color: #d69e2e;
+  color: #2d3748;
+}
+
+.sentence-example.high {
+  background-color: #fff5f5;
+  border-left-color: #e53e3e;
+  color: #2d3748;
+}
+
+/* Semantic Insight Styles */
+.insight-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.insight-header h4 {
+  margin: 0;
+  color: #1a202c;
+  font-size: 1.1rem;
+  flex-grow: 1;
+}
+
+.insight-content {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.insight-analysis.low {
+  color: #38a169;
+  font-weight: 500;
+}
+
+.insight-analysis.medium {
+  color: #d69e2e;
+  font-weight: 500;
+}
+
+.insight-analysis.high {
+  color: #e53e3e;
+  font-weight: 500;
+}
+
+/* Analysis Summary */
+.analysis-summary {
+  margin-top: 20px;
+  padding: 16px;
+  background-color: #edf2f7;
+  border-radius: 8px;
+  border-left: 4px solid #4299e1;
+}
+
+.analysis-summary strong {
+  color: #1a202c;
+}
+
+.analysis-summary small {
+  color: #4a5568;
+  font-size: 0.85rem;
+}
+
+/* Responsive Design for Modals */
+@media (max-width: 768px) {
+  .analysis-modal {
+    padding: 10px;
+  }
+  
+  .modal-content {
+    max-height: 90vh;
+  }
+  
+  .modal-header {
+    padding: 16px 20px 12px;
+  }
+  
+  .modal-body {
+    padding: 16px 20px;
+  }
+  
+  .insight-item {
+    flex-direction: column;
+    gap: 12px;
+  }
+}
+
+/* Enhanced Modal Styles for Analysis Insights */
+
+/* Perplexity Modal Specific Styles */
+.impactful-parts {
+  margin-top: 8px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
+  align-items: center;
+}
+
+.highlighted-part {
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-weight: 500;
+  font-size: 0.9em;
+  cursor: help;
+  transition: opacity 0.2s;
+}
+
+.highlighted-part.high {
+  background-color: rgba(239, 68, 68, 0.2);
+  color: #dc2626;
+  border: 1px solid rgba(239, 68, 68, 0.3);
+}
+
+.highlighted-part.medium {
+  background-color: rgba(245, 158, 11, 0.2);
+  color: #d97706;
+  border: 1px solid rgba(245, 158, 11, 0.3);
+}
+
+.highlighted-part.low {
+  background-color: rgba(34, 197, 94, 0.2);
+  color: #16a34a;
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.evidence-details {
+  margin-top: 8px;
+  padding: 8px;
+  background-color: rgba(0, 0, 0, 0.05);
+  border-radius: 4px;
+  font-size: 0.85em;
+}
+
+.evidence-item {
+  margin-bottom: 4px;
+}
+
+.no-evidence {
+  opacity: 0.8;
+}
+
+/* Enhanced Burstiness Modal Styles */
+.cluster-statistics {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  gap: 8px;
+  margin-bottom: 12px;
+  padding: 8px;
+  background-color: rgba(0, 0, 0, 0.03);
+  border-radius: 4px;
+}
+
+.stat-item {
+  font-size: 0.85em;
+  color: #6b7280;
+}
+
+.sentence-stats {
+  font-size: 0.8em;
+  color: #6b7280;
+  margin-left: 8px;
+}
+
+.more-sentences {
+  font-style: italic;
+  color: #6b7280;
+  margin-top: 6px;
+  font-size: 0.85em;
+}
+
+.no-clusters {
+  opacity: 0.8;
+}
+
+/* Enhanced Semantic Modal Styles */
+.semantic-section {
+  margin-bottom: 20px;
+}
+
+.semantic-section h4 {
+  margin: 0 0 12px 0;
+  font-size: 1.1em;
+  color: #374151;
+  border-bottom: 1px solid #e5e7eb;
+  padding-bottom: 6px;
+}
+
+.insight-title {
+  font-weight: 600;
+  color: #374151;
+}
+
+.insight-evidence {
+  margin-bottom: 8px;
+  font-style: italic;
+  color: #6b7280;
+  font-size: 0.9em;
+}
+
+.insight-sentences {
+  margin-top: 8px;
+}
+
+.evidence-sentence {
+  margin: 4px 0;
+  padding: 6px;
+  background-color: rgba(0, 0, 0, 0.03);
+  border-radius: 4px;
+  font-size: 0.85em;
+  line-height: 1.4;
+}
+
+.cluster-stats {
+  margin-top: 8px;
+  font-size: 0.85em;
+  color: #6b7280;
+}
+
+.repetition-sentences {
+  margin-top: 8px;
+}
+
+.repetition-sentences .evidence-sentence {
+  margin: 6px 0;
+  padding: 8px;
+  border-left: 3px solid #d1d5db;
+}
+
+.flow-transitions {
+  margin-top: 8px;
+}
+
+.transition-item {
+  margin: 6px 0;
+  padding: 6px;
+  background-color: rgba(0, 0, 0, 0.03);
+  border-radius: 4px;
+  font-size: 0.85em;
+}
+
+.transition-evidence {
+  color: #6b7280;
+  font-style: italic;
+}

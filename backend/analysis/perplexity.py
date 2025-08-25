@@ -444,14 +444,15 @@ class PerplexityAnalyzer:
         Args:
             text: Input text to analyze
         Returns:
-            Dictionary with comprehensive analysis results
+            Dictionary with comprehensive analysis results including detailed sentence analysis
         """
         if not text or len(text.strip()) < 10:
             return {
                 'overall_score': 0.5,
                 'base_perplexity': 0.5,
                 'stylistic_patterns': {'overall_score': 0.5, 'details': {}},
-                'register_authenticity': {'overall_score': 0.5, 'details': {}}
+                'register_authenticity': {'overall_score': 0.5, 'details': {}},
+                'detailed_sentences': []
             }
         
         # Get component weights from configuration
@@ -470,6 +471,10 @@ class PerplexityAnalyzer:
         # Analyze register authenticity
         register_analysis = self.analyze_register_authenticity(text)
         
+        # Get detailed sentence analysis for modal insights
+        sentences = sentence_splitter.split_into_sentences(text)
+        detailed_sentences = self.analyze_sentences_detailed(sentences)
+        
         # Calculate weighted overall score
         overall_score = (
             base_perplexity * perplexity_weights['base_perplexity'] +
@@ -484,7 +489,8 @@ class PerplexityAnalyzer:
             'base_perplexity': round(base_perplexity, 3),
             'stylistic_patterns': stylistic_analysis,
             'register_authenticity': register_analysis,
-            'component_weights': perplexity_weights
+            'component_weights': perplexity_weights,
+            'detailed_sentences': detailed_sentences
         }
     
     def analyze_sentences(self, sentences: List[str]) -> List[Dict[str, Any]]:
@@ -519,6 +525,171 @@ class PerplexityAnalyzer:
             })
         
         return sentence_analysis
+    
+    def analyze_sentences_detailed(self, sentences: List[str]) -> List[Dict[str, Any]]:
+        """
+        Enhanced sentence-level perplexity analysis with detailed insights
+        Returns top sentences with highlighted impactful parts
+        Args:
+            sentences: List of sentences to analyze
+        Returns:
+            List of detailed sentence analyses sorted by AI likelihood
+        """
+        sentence_analyses = []
+        
+        for sentence in sentences:
+            if len(sentence.strip()) < 5:
+                continue
+                
+            # Calculate perplexity score for the sentence
+            perplexity_score = self.calculate_perplexity(sentence)
+            
+            # Analyze stylistic patterns
+            stylistic_analysis = self.analyze_stylistic_patterns(sentence)
+            
+            # Identify impactful parts within the sentence
+            impactful_parts = self._identify_impactful_parts(sentence)
+            
+            # Get register authenticity analysis
+            register_analysis = self.analyze_register_authenticity(sentence)
+            
+            # Calculate combined score
+            combined_score = (
+                perplexity_score * 0.4 +
+                stylistic_analysis['overall_score'] * 0.3 +
+                register_analysis['overall_score'] * 0.3
+            )
+            
+            sentence_analyses.append({
+                'text': sentence,
+                'score': combined_score,
+                'perplexity_score': perplexity_score,
+                'stylistic_score': stylistic_analysis['overall_score'],
+                'register_score': register_analysis['overall_score'],
+                'impactful_parts': impactful_parts,
+                'evidence': {
+                    'suspicious_words': self._extract_suspicious_words(sentence),
+                    'formulaic_phrases': stylistic_analysis['details'].get('matched_phrases', []),
+                    'transitions': stylistic_analysis['details'].get('matched_transitions', []),
+                    'register_issues': register_analysis['details']
+                }
+            })
+        
+        # Sort by AI likelihood score (descending) and return top 10
+        sentence_analyses.sort(key=lambda x: x['score'], reverse=True)
+        return sentence_analyses[:10]
+    
+    def _identify_impactful_parts(self, sentence: str) -> List[Dict[str, Any]]:
+        """
+        Identify parts of the sentence that contribute most to AI likelihood
+        Args:
+            sentence: Sentence to analyze
+        Returns:
+            List of impactful parts with their positions and reasons
+        """
+        impactful_parts = []
+        words = sentence_splitter.tokenize_words(sentence)
+        
+        if not words:
+            return impactful_parts
+        
+        # Check for suspicious patterns from loaded configurations
+        if self.llm_red_flags:
+            # Identify suspicious verbs
+            suspicious_verbs = self.llm_red_flags.get('suspicious_verbs', [])
+            suspicious_modifiers = self.llm_red_flags.get('suspicious_modifiers', [])
+            suspicious_nouns = self.llm_red_flags.get('suspicious_nouns', [])
+            
+            for i, word in enumerate(words):
+                word_lower = word.lower()
+                impact_type = None
+                impact_score = 0.0
+                
+                if word_lower in suspicious_verbs:
+                    impact_type = 'suspicious_verb'
+                    impact_score = 0.7
+                elif word_lower in suspicious_modifiers:
+                    impact_type = 'suspicious_modifier'
+                    impact_score = 0.6
+                elif word_lower in suspicious_nouns:
+                    impact_type = 'suspicious_noun'
+                    impact_score = 0.5
+                
+                if impact_type:
+                    # Find word position in original sentence
+                    start_pos = sentence.lower().find(word_lower)
+                    if start_pos != -1:
+                        impactful_parts.append({
+                            'text': word,
+                            'start_pos': start_pos,
+                            'end_pos': start_pos + len(word),
+                            'impact_type': impact_type,
+                            'score': impact_score,
+                            'explanation': self._get_impact_explanation(impact_type)
+                        })
+        
+        # Check for formulaic phrases
+        if self.llm_red_flags:
+            for phrase_pattern in self.llm_red_flags.get('formulaic_phrases', []):
+                try:
+                    matches = re.finditer(phrase_pattern, sentence, re.IGNORECASE)
+                    for match in matches:
+                        impactful_parts.append({
+                            'text': match.group(),
+                            'start_pos': match.start(),
+                            'end_pos': match.end(),
+                            'impact_type': 'formulaic_phrase',
+                            'score': 0.8,
+                            'explanation': 'Formulaic phrases common in AI-generated text'
+                        })
+                except re.error:
+                    # Skip invalid regex patterns
+                    continue
+        
+        # Sort by impact score and return top 5
+        impactful_parts.sort(key=lambda x: x['score'], reverse=True)
+        return impactful_parts[:5]
+    
+    def _extract_suspicious_words(self, sentence: str) -> List[str]:
+        """
+        Extract suspicious words from sentence
+        Args:
+            sentence: Sentence to analyze
+        Returns:
+            List of suspicious words found
+        """
+        suspicious_words = []
+        words = sentence_splitter.tokenize_words(sentence)
+        
+        if self.llm_red_flags:
+            all_suspicious = (
+                self.llm_red_flags.get('suspicious_verbs', []) +
+                self.llm_red_flags.get('suspicious_modifiers', []) +
+                self.llm_red_flags.get('suspicious_nouns', [])
+            )
+            
+            for word in words:
+                if word.lower() in all_suspicious:
+                    suspicious_words.append(word)
+        
+        return suspicious_words[:5]  # Limit to top 5
+    
+    def _get_impact_explanation(self, impact_type: str) -> str:
+        """
+        Get explanation for impact type
+        Args:
+            impact_type: Type of impact identified
+        Returns:
+            Human-readable explanation
+        """
+        explanations = {
+            'suspicious_verb': 'Verb commonly overused in AI-generated text',
+            'suspicious_modifier': 'Modifier/adjective frequently used by AI models',
+            'suspicious_noun': 'Noun that appears disproportionately in AI text',
+            'formulaic_phrase': 'Phrase pattern typical of AI language models',
+            'transition_construct': 'Transition phrase characteristic of AI writing'
+        }
+        return explanations.get(impact_type, 'Potentially AI-generated pattern')
     
     def analyze_paragraphs(self, text: str) -> List[Dict[str, Any]]:
         """

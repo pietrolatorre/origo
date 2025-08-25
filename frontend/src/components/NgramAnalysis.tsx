@@ -20,16 +20,15 @@ export const NgramAnalysisModal: React.FC<NgramAnalysisProps> = ({ ngramData, on
   };
 
   const renderNgramTable = (items: NgramItem[], title: string) => {
-    // Filter and sort items, showing only top 10
-    const significantItems = items
-      .filter(item => item.score >= 0.6) // Only show yellow/red scores
+    // Show top 5 items regardless of score threshold to avoid empty displays
+    const topItems = items
       .sort((a, b) => b.score - a.score)
-      .slice(0, 10);
+      .slice(0, 5);
 
-    if (significantItems.length === 0) {
+    if (topItems.length === 0) {
       return (
         <div className="no-significant-elements">
-          No significant {title.toLowerCase()} patterns show evidence of AI-generated content.
+          No {title.toLowerCase()} patterns detected in this text.
         </div>
       );
     }
@@ -45,7 +44,7 @@ export const NgramAnalysisModal: React.FC<NgramAnalysisProps> = ({ ngramData, on
             </tr>
           </thead>
           <tbody>
-            {significantItems.map((item, index) => (
+            {topItems.map((item, index) => (
               <tr key={index}>
                 <td className="ngram-text">{item.text}</td>
                 <td className="ngram-frequency">{item.frequency}</td>
@@ -60,11 +59,9 @@ export const NgramAnalysisModal: React.FC<NgramAnalysisProps> = ({ ngramData, on
             ))}
           </tbody>
         </table>
-        {significantItems.length === 10 && (
-          <div className="results-limit-notice">
-            Showing top 10 results. Export report for complete analysis.
-          </div>
-        )}
+        <div className="results-limit-notice">
+          Showing top {topItems.length} patterns by frequency and repetition.
+        </div>
       </div>
     );
   };

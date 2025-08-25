@@ -414,11 +414,11 @@ class BurstinessAnalyzer:
     
     def analyze_text(self, text: str) -> Dict[str, Any]:
         """
-        Comprehensive burstiness analysis including structural consistency
+        Comprehensive burstiness analysis including structural consistency and sentence clustering
         Args:
             text: Text to analyze
         Returns:
-            Dictionary with burstiness analysis results
+            Dictionary with burstiness analysis results including detailed sentence clusters
         """
         sentences = sentence_splitter.split_into_sentences(text)
         
@@ -430,6 +430,9 @@ class BurstinessAnalyzer:
         
         # Calculate structural consistency analysis
         structural_analysis = self.analyze_structural_consistency(text)
+        
+        # Analyze sentence clusters for modal insights
+        cluster_analysis = self.analyze_sentence_clusters(sentences)
         
         # Get component weights from configuration
         burstiness_weights = self.weights_config.get('burstiness_components', {
@@ -460,6 +463,7 @@ class BurstinessAnalyzer:
             'overall_score': round(overall_score, 3),
             'base_burstiness': round(base_ai_probability, 3),
             'structural_consistency': structural_analysis,
+            'sentence_clusters': cluster_analysis,
             'components': {
                 'length_variation': round(length_variation, 3),
                 'complexity_variation': round(complexity_variation, 3),
@@ -503,6 +507,240 @@ class BurstinessAnalyzer:
             })
         
         return sentence_analysis
+    
+    def analyze_sentence_clusters(self, sentences: List[str]) -> Dict[str, Any]:
+        """
+        Enhanced sentence clustering analysis for burstiness modal
+        Identifies clusters of sentences with similar structures and lengths
+        Args:
+            sentences: List of sentences to analyze
+        Returns:
+            Dictionary with detailed cluster analysis
+        """
+        if len(sentences) < 3:
+            return {
+                'clusters': [],
+                'summary': {
+                    'total_clusters': 0,
+                    'uniformity_score': 0.5,
+                    'ai_likelihood': 0.5
+                }
+            }
+        
+        # Analyze sentence features for clustering
+        sentence_features = []
+        for i, sentence in enumerate(sentences):
+            words = sentence.split()
+            features = {
+                'index': i,
+                'text': sentence,
+                'length': len(words),
+                'complexity': self._calculate_sentence_complexity(sentence),
+                'start_pattern': self._get_sentence_start_pattern(sentence),
+                'structure_signature': self._get_structure_signature(sentence)
+            }
+            sentence_features.append(features)
+        
+        # Identify clusters based on similar features
+        clusters = self._identify_sentence_clusters(sentence_features)
+        
+        # Calculate uniformity scores
+        uniformity_analysis = self._calculate_cluster_uniformity(clusters)
+        
+        return {
+            'clusters': clusters,
+            'summary': uniformity_analysis
+        }
+    
+    def _calculate_sentence_complexity(self, sentence: str) -> Dict[str, float]:
+        """
+        Calculate detailed complexity metrics for a sentence
+        """
+        words = sentence.split()
+        if not words:
+            return {'overall': 0.0, 'lexical': 0.0, 'syntactic': 0.0}
+        
+        # Lexical complexity
+        long_words = sum(1 for word in words if len(word) > 6)
+        lexical_complexity = long_words / len(words)
+        
+        # Syntactic complexity
+        punctuation_count = sum(1 for char in sentence if char in '.,;:!?')
+        subordinate_conjunctions = sum(1 for word in words if word.lower() in 
+                                     ['although', 'because', 'since', 'while', 'whereas', 'if', 'unless'])
+        syntactic_complexity = (punctuation_count + subordinate_conjunctions) / len(words)
+        
+        overall_complexity = (lexical_complexity + syntactic_complexity) / 2
+        
+        return {
+            'overall': overall_complexity,
+            'lexical': lexical_complexity,
+            'syntactic': syntactic_complexity
+        }
+    
+    def _get_sentence_start_pattern(self, sentence: str) -> str:
+        """
+        Extract the starting pattern of a sentence
+        """
+        words = sentence.strip().split()
+        if not words:
+            return 'empty'
+        
+        first_word = words[0].lower().rstrip('.,!?;:')
+        
+        # Categorize common starting patterns
+        if first_word in ['the', 'a', 'an']:
+            return 'article'
+        elif first_word in ['this', 'that', 'these', 'those']:
+            return 'demonstrative'
+        elif first_word in ['it', 'he', 'she', 'they', 'we', 'i', 'you']:
+            return 'pronoun'
+        elif first_word in ['however', 'moreover', 'furthermore', 'additionally', 'consequently']:
+            return 'transition'
+        else:
+            return 'other'
+    
+    def _get_structure_signature(self, sentence: str) -> str:
+        """
+        Create a structural signature for the sentence
+        """
+        words = sentence.split()
+        if not words:
+            return 'empty'
+        
+        # Create signature based on word types and punctuation
+        signature_parts = []
+        
+        # Length category
+        if len(words) < 10:
+            signature_parts.append('short')
+        elif len(words) < 20:
+            signature_parts.append('medium')
+        else:
+            signature_parts.append('long')
+        
+        # Punctuation pattern
+        if ',' in sentence:
+            signature_parts.append('comma')
+        if any(char in sentence for char in '!?'):
+            signature_parts.append('exclamatory')
+        if ';' in sentence or ':' in sentence:
+            signature_parts.append('complex_punct')
+        
+        return '_'.join(signature_parts) if signature_parts else 'simple'
+    
+    def _identify_sentence_clusters(self, sentence_features: List[Dict]) -> List[Dict[str, Any]]:
+        """
+        Identify clusters of sentences with similar characteristics
+        """
+        clusters = []
+        
+        # Group by structure signature first
+        signature_groups = {}
+        for feature in sentence_features:
+            signature = feature['structure_signature']
+            if signature not in signature_groups:
+                signature_groups[signature] = []
+            signature_groups[signature].append(feature)
+        
+        # Analyze each signature group
+        for signature, group in signature_groups.items():
+            if len(group) < 2:  # Skip singleton groups
+                continue
+            
+            # Calculate group statistics
+            lengths = [f['length'] for f in group]
+            complexities = [f['complexity']['overall'] for f in group]
+            start_patterns = [f['start_pattern'] for f in group]
+            
+            # Check for uniformity within cluster
+            length_variance = np.std(lengths) / np.mean(lengths) if np.mean(lengths) > 0 else 0
+            complexity_variance = np.std(complexities) if complexities else 0
+            
+            # Count pattern repetitions
+            pattern_counts = {}
+            for pattern in start_patterns:
+                pattern_counts[pattern] = pattern_counts.get(pattern, 0) + 1
+            
+            most_common_pattern = max(pattern_counts, key=pattern_counts.get) if pattern_counts else 'none'
+            pattern_repetition_rate = pattern_counts.get(most_common_pattern, 0) / len(group)
+            
+            # Calculate uniformity score (higher = more AI-like)
+            uniformity_score = (
+                (1.0 - min(1.0, length_variance)) * 0.4 +
+                (1.0 - min(1.0, complexity_variance * 10)) * 0.3 +
+                pattern_repetition_rate * 0.3
+            )
+            
+            cluster = {
+                'id': f'cluster_{len(clusters) + 1}',
+                'structure_signature': signature,
+                'sentence_count': len(group),
+                'sentences': [{
+                    'text': f['text'],
+                    'length': f['length'],
+                    'complexity': f['complexity']['overall'],
+                    'start_pattern': f['start_pattern']
+                } for f in group],
+                'statistics': {
+                    'avg_length': float(np.mean(lengths)),
+                    'length_variance': float(length_variance),
+                    'avg_complexity': float(np.mean(complexities)),
+                    'complexity_variance': float(complexity_variance),
+                    'dominant_start_pattern': most_common_pattern,
+                    'pattern_repetition_rate': float(pattern_repetition_rate)
+                },
+                'uniformity_score': float(uniformity_score),
+                'ai_likelihood': float(uniformity_score)  # Higher uniformity = higher AI likelihood
+            }
+            
+            clusters.append(cluster)
+        
+        # Sort clusters by AI likelihood (descending)
+        clusters.sort(key=lambda x: x['ai_likelihood'], reverse=True)
+        return clusters[:5]  # Return top 5 most suspicious clusters
+    
+    def _calculate_cluster_uniformity(self, clusters: List[Dict]) -> Dict[str, Any]:
+        """
+        Calculate overall uniformity analysis from clusters
+        """
+        if not clusters:
+            return {
+                'total_clusters': 0,
+                'uniformity_score': 0.5,
+                'ai_likelihood': 0.5,
+                'dominant_patterns': []
+            }
+        
+        # Calculate overall metrics
+        total_sentences = sum(cluster['sentence_count'] for cluster in clusters)
+        clustered_sentences = sum(cluster['sentence_count'] for cluster in clusters if cluster['sentence_count'] > 1)
+        
+        clustering_rate = clustered_sentences / max(1, total_sentences)
+        avg_uniformity = np.mean([cluster['uniformity_score'] for cluster in clusters])
+        
+        # Identify dominant structural patterns
+        dominant_patterns = []
+        for cluster in clusters[:3]:  # Top 3 clusters
+            dominant_patterns.append({
+                'pattern': cluster['structure_signature'],
+                'sentence_count': cluster['sentence_count'],
+                'uniformity': float(cluster['uniformity_score'])
+            })
+        
+        # Calculate overall AI likelihood
+        ai_likelihood = (
+            clustering_rate * 0.4 +  # High clustering rate is suspicious
+            avg_uniformity * 0.6     # High uniformity within clusters is suspicious
+        )
+        
+        return {
+            'total_clusters': len(clusters),
+            'clustering_rate': float(clustering_rate),
+            'uniformity_score': float(avg_uniformity),
+            'ai_likelihood': float(ai_likelihood),
+            'dominant_patterns': dominant_patterns
+        }
 
 # Global burstiness analyzer instance
 burstiness_analyzer = BurstinessAnalyzer()

@@ -34,8 +34,12 @@
   },
   "performance_settings": {
     "cache_model_outputs": true,
-    "parallel_analysis": false,
-    "timeout_seconds": 120
+    "parallel_analysis": true,
+    "timeout_seconds": 60,
+    "max_workers": 4,
+    "enable_caching": true,
+    "cache_ttl_seconds": 300,
+    "batch_size": 32
   },
   "version": "1.0.0",
   "last_updated": "2025-08-25"

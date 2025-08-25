@@ -7,6 +7,8 @@ Weighs different analysis components based on their reliability and importance
 import logging
 import json
 import os
+import hashlib
+import time
 from typing import Dict, List, Any
 from concurrent.futures import ThreadPoolExecutor, as_completed
 from .perplexity import perplexity_analyzer
@@ -37,6 +39,18 @@ class ScoreFusion:
             'ngram_similarity': 0.25,  # Equal weight
             'semantic_coherence': 0.25 # Equal weight
         })
+        
+        # Performance settings
+        self.performance_settings = self.weights_config.get('performance_settings', {})
+        self.parallel_enabled = self.performance_settings.get('parallel_analysis', True)
+        self.cache_enabled = self.performance_settings.get('enable_caching', True)
+        self.cache_ttl = self.performance_settings.get('cache_ttl_seconds', 300)
+        self.max_workers = self.performance_settings.get('max_workers', 4)
+        self.timeout_seconds = self.performance_settings.get('timeout_seconds', 60)
+        
+        # Simple in-memory cache
+        self.cache = {} if self.cache_enabled else None
+        self.cache_timestamps = {} if self.cache_enabled else None
     
     def _load_config(self, filename: str) -> Dict[str, Any]:
         """Load configuration from JSON file"""
@@ -56,9 +70,47 @@ class ScoreFusion:
             for key in self.weights:
                 self.weights[key] /= total_weight
     
+    def _get_cache_key(self, text: str, analysis_type: str = 'full') -> str:
+        """Generate cache key for text analysis"""
+        if not self.cache_enabled:
+            return None
+        
+        # Create hash of text content and analysis type
+        text_hash = hashlib.md5(text.encode('utf-8')).hexdigest()
+        return f"{analysis_type}_{text_hash}"
+    
+    def _get_from_cache(self, cache_key: str) -> Any:
+        """Get result from cache if available and not expired"""
+        if not self.cache_enabled or not cache_key or cache_key not in self.cache:
+            return None
+        
+        # Check if cache entry is expired
+        timestamp = self.cache_timestamps.get(cache_key, 0)
+        if time.time() - timestamp > self.cache_ttl:
+            # Remove expired entry
+            del self.cache[cache_key]
+            del self.cache_timestamps[cache_key]
+            return None
+        
+        return self.cache[cache_key]
+    
+    def _store_in_cache(self, cache_key: str, result: Any) -> None:
+        """Store result in cache"""
+        if not self.cache_enabled or not cache_key:
+            return
+        
+        self.cache[cache_key] = result
+        self.cache_timestamps[cache_key] = time.time()
+        
+        # Simple cache cleanup - remove oldest entries if cache gets too large
+        if len(self.cache) > 100:  # Max 100 cached entries
+            oldest_key = min(self.cache_timestamps.keys(), key=lambda k: self.cache_timestamps[k])
+            del self.cache[oldest_key]
+            del self.cache_timestamps[oldest_key]
+    
     def analyze_text_comprehensive(self, text: str) -> Dict[str, Any]:
         """
-        Perform comprehensive analysis using all available methods with parallel processing
+        Perform comprehensive analysis using all available methods with caching and parallel processing
         Args:
             text: Input text to analyze
         Returns:
@@ -67,11 +119,23 @@ class ScoreFusion:
         if not text or len(text.strip()) < 10:
             return self._create_empty_result()
         
-        logger.info("Starting comprehensive text analysis with parallel processing...")
+        # Check cache first
+        cache_key = self._get_cache_key(text, 'comprehensive')
+        cached_result = self._get_from_cache(cache_key)
+        if cached_result is not None:
+            logger.info("Retrieved comprehensive analysis from cache")
+            return cached_result
+        
+        start_time = time.time()
+        logger.info("Starting comprehensive text analysis with optimized parallel processing...")
         
         try:
-            # Run analysis modules in parallel for better performance
-            analysis_results = self._run_parallel_analysis(text)
+            if self.parallel_enabled:
+                # Run analysis modules in parallel for better performance
+                analysis_results = self._run_optimized_parallel_analysis(text)
+            else:
+                # Fallback to sequential analysis
+                analysis_results = self._run_sequential_analysis(text)
             
             # Extract scores from results
             scores = {
@@ -86,9 +150,11 @@ class ScoreFusion:
             overall_score = sum(scores[key] * self.weights[key] for key in scores)
             overall_score = max(0.0, min(1.0, overall_score))  # Clamp to [0,1]
             
-            # Analyze paragraph and sentence structure
-            paragraphs_analysis = self._analyze_paragraphs(text)
-            word_analysis = self._analyze_words(text)
+            # Optimize paragraph and sentence analysis with selective processing
+            paragraphs_analysis = self._analyze_paragraphs_optimized(text)
+            word_analysis = self._analyze_words_optimized(text)
+            
+            processing_time = time.time() - start_time
             
             result = {
                 'overall_score': round(overall_score, 3),
@@ -112,7 +178,9 @@ class ScoreFusion:
                     'sentence_count': len(sentence_splitter.split_into_sentences(text)),
                     'paragraph_count': len(sentence_splitter.split_into_paragraphs(text)),
                     'weights_used': self.weights.copy(),
-                    'parallel_processing_enabled': True,
+                    'parallel_processing_enabled': self.parallel_enabled,
+                    'caching_enabled': self.cache_enabled,
+                    'processing_time_seconds': round(processing_time, 3),
                     'enhanced_features_enabled': {
                         'stylistic_analysis': self.weights_config.get('feature_flags', {}).get('enable_stylistic_analysis', True),
                         'register_analysis': self.weights_config.get('feature_flags', {}).get('enable_register_analysis', True),
@@ -121,16 +189,19 @@ class ScoreFusion:
                 }
             }
             
-            logger.info(f"Analysis complete. Overall score: {overall_score:.3f}")
+            # Store result in cache
+            self._store_in_cache(cache_key, result)
+            
+            logger.info(f"Analysis complete in {processing_time:.2f}s. Overall score: {overall_score:.3f}")
             return result
             
         except Exception as e:
             logger.error(f"Error in comprehensive analysis: {e}")
             return self._create_error_result(str(e))
     
-    def _run_parallel_analysis(self, text: str) -> Dict[str, Any]:
+    def _run_optimized_parallel_analysis(self, text: str) -> Dict[str, Any]:
         """
-        Run all analysis modules in parallel for improved performance
+        Run all analysis modules in parallel with optimized performance settings
         Args:
             text: Text to analyze
         Returns:
@@ -138,44 +209,91 @@ class ScoreFusion:
         """
         results = {}
         
-        # Define analysis tasks
-        analysis_tasks = {
-            'perplexity': lambda: perplexity_analyzer.analyze_text(text),
-            'burstiness': lambda: burstiness_analyzer.analyze_text(text),
-            'ngram': lambda: ngram_analyzer.analyze_text_with_patterns(text),
-            'semantic': lambda: semantic_analyzer.analyze_text(text)
-        }
+        # Check cache for individual components first
+        cached_components = {}
+        for component in ['perplexity', 'burstiness', 'ngram', 'semantic']:
+            cache_key = self._get_cache_key(text, component)
+            cached_result = self._get_from_cache(cache_key)
+            if cached_result is not None:
+                cached_components[component] = cached_result
+                logger.info(f"Retrieved {component} analysis from cache")
         
-        # Execute tasks in parallel
-        with ThreadPoolExecutor(max_workers=4) as executor:
-            # Submit all tasks
-            future_to_name = {executor.submit(task, ): name for name, task in analysis_tasks.items()}
-            
-            # Collect results as they complete
-            for future in as_completed(future_to_name):
-                analysis_name = future_to_name[future]
-                try:
-                    result = future.result(timeout=30)  # 30 second timeout per analyzer
-                    results[analysis_name] = result
-                    logger.info(f"Completed {analysis_name} analysis")
-                except Exception as e:
-                    logger.error(f"Error in {analysis_name} analysis: {e}")
-                    results[analysis_name] = {'overall_score': 0.5}  # Default fallback
+        # Define analysis tasks only for non-cached components
+        analysis_tasks = {}
+        if 'perplexity' not in cached_components:
+            analysis_tasks['perplexity'] = lambda: perplexity_analyzer.analyze_text(text)
+        if 'burstiness' not in cached_components:
+            analysis_tasks['burstiness'] = lambda: burstiness_analyzer.analyze_text(text)
+        if 'ngram' not in cached_components:
+            analysis_tasks['ngram'] = lambda: ngram_analyzer.analyze_text_with_patterns(text)
+        if 'semantic' not in cached_components:
+            analysis_tasks['semantic'] = lambda: semantic_analyzer.analyze_text(text)
+        
+        # Use cached results
+        results.update(cached_components)
+        
+        # Execute only non-cached tasks in parallel
+        if analysis_tasks:
+            with ThreadPoolExecutor(max_workers=self.max_workers) as executor:
+                # Submit all tasks
+                future_to_name = {executor.submit(task): name for name, task in analysis_tasks.items()}
+                
+                # Collect results as they complete
+                for future in as_completed(future_to_name, timeout=self.timeout_seconds):
+                    analysis_name = future_to_name[future]
+                    try:
+                        result = future.result(timeout=30)  # 30 second timeout per analyzer
+                        results[analysis_name] = result
+                        
+                        # Cache individual component result
+                        cache_key = self._get_cache_key(text, analysis_name)
+                        self._store_in_cache(cache_key, result)
+                        
+                        logger.info(f"Completed {analysis_name} analysis")
+                    except Exception as e:
+                        logger.error(f"Error in {analysis_name} analysis: {e}")
+                        results[analysis_name] = {'overall_score': 0.5}  # Default fallback
         
         return results
+    
+    def _run_sequential_analysis(self, text: str) -> Dict[str, Any]:
         """
-        Safely execute analysis function with error handling
+        Run analysis modules sequentially as fallback
         Args:
-            analysis_func: Function to execute
-            analysis_name: Name of analysis for logging
+            text: Text to analyze
         Returns:
-            Analysis result or default value on error
+            Dictionary with results from all analyzers
         """
-        try:
-            return analysis_func()
-        except Exception as e:
-            logger.error(f"Error in {analysis_name} analysis: {e}")
-            return {'overall_score': 0.5} if analysis_name != 'perplexity' else 0.5
+        results = {}
+        
+        analysis_methods = [
+            ('perplexity', lambda: perplexity_analyzer.analyze_text(text)),
+            ('burstiness', lambda: burstiness_analyzer.analyze_text(text)),
+            ('ngram', lambda: ngram_analyzer.analyze_text_with_patterns(text)),
+            ('semantic', lambda: semantic_analyzer.analyze_text(text))
+        ]
+        
+        for name, method in analysis_methods:
+            try:
+                # Check cache first
+                cache_key = self._get_cache_key(text, name)
+                cached_result = self._get_from_cache(cache_key)
+                if cached_result is not None:
+                    results[name] = cached_result
+                    logger.info(f"Retrieved {name} analysis from cache")
+                    continue
+                
+                # Run analysis and cache result
+                result = method()
+                results[name] = result
+                self._store_in_cache(cache_key, result)
+                logger.info(f"Completed {name} analysis")
+                
+            except Exception as e:
+                logger.error(f"Error in {name} analysis: {e}")
+                results[name] = {'overall_score': 0.5}
+        
+        return results
     
     def _extract_score(self, result: Any, analysis_type: str) -> float:
         """
@@ -209,9 +327,9 @@ class ScoreFusion:
             logger.warning(f"Error extracting score for {analysis_type}: {e}, using default")
             return 0.5
     
-    def _analyze_paragraphs(self, text: str) -> List[Dict[str, Any]]:
+    def _analyze_paragraphs_optimized(self, text: str) -> List[Dict[str, Any]]:
         """
-        Analyze individual paragraphs with sentence breakdown
+        Analyze individual paragraphs with optimized sentence breakdown
         Args:
             text: Input text
         Returns:
@@ -220,44 +338,27 @@ class ScoreFusion:
         paragraphs = sentence_splitter.split_into_paragraphs(text)
         paragraph_analyses = []
         
-        for paragraph in paragraphs:
+        # Limit paragraph analysis for very long texts
+        max_paragraphs = 10 if len(paragraphs) > 10 else len(paragraphs)
+        
+        for i, paragraph in enumerate(paragraphs[:max_paragraphs]):
             try:
-                # Get paragraph-level score from each analyzer
+                # For performance, use simplified analysis for paragraphs
+                # Only run perplexity and one other analyzer per paragraph
                 para_perplexity_result = perplexity_analyzer.analyze_text(paragraph)
                 para_burstiness_result = burstiness_analyzer.analyze_text(paragraph)
-                para_ngram_result = ngram_analyzer.analyze_text(paragraph)
-                para_semantic_result = semantic_analyzer.analyze_text(paragraph)
                 
                 # Extract scores with validation
                 para_perplexity = self._extract_score(para_perplexity_result, 'perplexity')
                 para_burstiness = self._extract_score(para_burstiness_result, 'burstiness')
-                para_ngram = self._extract_score(para_ngram_result, 'ngram')
-                para_semantic = self._extract_score(para_semantic_result, 'semantic')
                 
-                # Validate all scores are numeric before calculation
-                scores_valid = all(isinstance(score, (int, float)) and 0 <= score <= 1 
-                                 for score in [para_perplexity, para_burstiness, para_ngram, para_semantic])
+                # Simplified scoring for performance (only use top 2 most reliable analyzers)
+                paragraph_score = (para_perplexity * 0.6 + para_burstiness * 0.4)
+                paragraph_score = max(0.0, min(1.0, paragraph_score))
                 
-                if not scores_valid:
-                    logger.warning(f"Invalid scores detected in paragraph analysis, using defaults")
-                    para_perplexity = para_burstiness = para_ngram = para_semantic = 0.5
-                
-                # Calculate paragraph score safely
-                try:
-                    paragraph_score = (
-                        float(para_perplexity) * self.weights['perplexity'] +
-                        float(para_burstiness) * self.weights['burstiness'] +
-                        float(para_ngram) * self.weights['ngram_similarity'] +
-                        float(para_semantic) * self.weights['semantic_coherence']
-                    )
-                    paragraph_score = max(0.0, min(1.0, paragraph_score))  # Clamp to valid range
-                except (TypeError, ValueError) as e:
-                    logger.warning(f"Error calculating paragraph score: {e}, using default")
-                    paragraph_score = 0.5
-                
-                # Analyze sentences within paragraph
+                # Analyze sentences within paragraph (limited for performance)
                 sentences = sentence_splitter.split_into_sentences(paragraph)
-                sentence_analyses = self._analyze_sentences(sentences)
+                sentence_analyses = self._analyze_sentences_optimized(sentences[:5])  # Limit to first 5 sentences
                 
                 paragraph_analyses.append({
                     'text': paragraph,
@@ -266,8 +367,7 @@ class ScoreFusion:
                 })
                 
             except Exception as e:
-                logger.error(f"Error analyzing paragraph: {e}")
-                # Ensure paragraph text is properly handled even in error cases
+                logger.error(f"Error analyzing paragraph {i}: {e}")
                 safe_paragraph = str(paragraph) if paragraph else "Error: Unable to process paragraph"
                 paragraph_analyses.append({
                     'text': safe_paragraph,
@@ -275,7 +375,166 @@ class ScoreFusion:
                     'sentences': []
                 })
         
+        # Add summary for remaining paragraphs if truncated
+        if len(paragraphs) > max_paragraphs:
+            remaining_count = len(paragraphs) - max_paragraphs
+            paragraph_analyses.append({
+                'text': f"... and {remaining_count} more paragraphs (analysis truncated for performance)",
+                'score': 0.5,
+                'sentences': []
+            })
+        
         return paragraph_analyses
+    
+    def _analyze_sentences_optimized(self, sentences: List[str]) -> List[Dict[str, Any]]:
+        """
+        Analyze individual sentences with optimized word breakdown
+        Args:
+            sentences: List of sentences
+        Returns:
+            List of sentence analyses
+        """
+        sentence_analyses = []
+        
+        # Limit sentence analysis for performance
+        max_sentences = 8 if len(sentences) > 8 else len(sentences)
+        
+        for i, sentence in enumerate(sentences[:max_sentences]):
+            try:
+                # Use only perplexity for sentence-level analysis (fastest)
+                sent_perplexity_result = perplexity_analyzer.analyze_text(sentence)
+                sent_perplexity = self._extract_score(sent_perplexity_result, 'perplexity')
+                
+                # Ensure perplexity score is valid
+                if not isinstance(sent_perplexity, (int, float)) or not (0 <= sent_perplexity <= 1):
+                    sent_perplexity = 0.5
+                
+                sentence_score = float(sent_perplexity)
+                
+                # Minimal word analysis for performance
+                words = sentence_splitter.tokenize_words(sentence)
+                word_analyses = []
+                
+                # Only analyze high-impact words (length > 5, skip common words)
+                significant_words = [w for w in words 
+                                   if len(w) > 5 and w.lower() not in 
+                                   ['this', 'that', 'with', 'from', 'they', 'were', 'been', 'have', 'will', 'would', 'could', 'should']]
+                
+                # Limit to 5 words per sentence for performance
+                for word in significant_words[:5]:
+                    try:
+                        word_score = perplexity_analyzer.calculate_perplexity(word)
+                        if word_score > 0.4:  # Higher threshold for better performance
+                            word_analyses.append({
+                                'word': word,
+                                'score': round(word_score, 3)
+                            })
+                    except:
+                        continue
+                
+                sentence_analyses.append({
+                    'text': sentence,
+                    'score': round(sentence_score, 3),
+                    'words': word_analyses
+                })
+                
+            except Exception as e:
+                logger.error(f"Error analyzing sentence {i}: {e}")
+                sentence_analyses.append({
+                    'text': sentence,
+                    'score': 0.5,
+                    'words': []
+                })
+        
+        # Add summary if sentences were truncated
+        if len(sentences) > max_sentences:
+            remaining_count = len(sentences) - max_sentences
+            sentence_analyses.append({
+                'text': f"... and {remaining_count} more sentences (analysis truncated for performance)",
+                'score': 0.5,
+                'words': []
+            })
+        
+        return sentence_analyses
+    
+    def _analyze_words_optimized(self, text: str) -> Dict[str, Any]:
+        """
+        Perform optimized word-level impact analysis
+        Args:
+            text: Input text
+        Returns:
+            Enhanced word analysis results with performance optimizations
+        """
+        try:
+            # Get word analysis but limit processing for performance
+            word_impact = perplexity_analyzer.get_word_impact_analysis(text)
+            suspicious_words = perplexity_analyzer.get_suspicious_words_in_text(text)
+            
+            # Ensure consistent data structures
+            all_words = word_impact.get('unique_words', [])
+            if not isinstance(all_words, list):
+                all_words = []
+            
+            if not isinstance(suspicious_words, list):
+                suspicious_words = []
+            
+            # Limit processing for performance - only top 15 words
+            all_words = all_words[:15]
+            suspicious_words = suspicious_words[:10]
+            
+            # Create efficient lookup for suspicious words
+            suspicious_dict = {}
+            for w in suspicious_words:
+                if isinstance(w, dict) and 'word' in w:
+                    word_key = str(w['word']).lower()
+                    suspicious_dict[word_key] = {
+                        'word': str(w['word']),
+                        'average_score': float(w.get('average_score', 0.5)),
+                        'count': int(w.get('count', 1)),
+                        'category': str(w.get('category', 'suspicious'))
+                    }
+            
+            # Process regular words efficiently
+            updated_words = []
+            for w in all_words:
+                if isinstance(w, dict) and 'word' in w:
+                    word = str(w['word'])
+                    word_lower = word.lower()
+                    
+                    if word_lower in suspicious_dict:
+                        # Merge with suspicious word data
+                        susp_data = suspicious_dict[word_lower]
+                        updated_words.append({
+                            'word': word,
+                            'average_score': max(float(w.get('average_score', 0.0)), susp_data['average_score']),
+                            'count': int(w.get('count', 1)),
+                            'category': susp_data['category']
+                        })
+                    else:
+                        updated_words.append({
+                            'word': word,
+                            'average_score': float(w.get('average_score', 0.0)),
+                            'count': int(w.get('count', 1)),
+                            'category': 'normal'
+                        })
+            
+            # Add remaining suspicious words
+            for word_lower, susp_data in suspicious_dict.items():
+                if not any(w['word'].lower() == word_lower for w in updated_words):
+                    updated_words.append(susp_data)
+            
+            # Efficient sorting
+            updated_words.sort(key=lambda x: float(x.get('average_score', 0)) * int(x.get('count', 1)), reverse=True)
+            
+            return {
+                'unique_words': updated_words[:20],  # Limit to top 20 for performance
+                'suspicious_words_found': len(suspicious_words),
+                'total_unique_words': len(updated_words)
+            }
+            
+        except Exception as e:
+            logger.error(f"Error in optimized word analysis: {e}")
+            return {'unique_words': [], 'suspicious_words_found': 0, 'total_unique_words': 0}
     
     def _analyze_sentences(self, sentences: List[str]) -> List[Dict[str, Any]]:
         """

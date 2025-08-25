@@ -2,6 +2,7 @@
  * AnalysisResults component for displaying comprehensive analysis results
  */
 
+// Modal imports
 import React, { useState } from 'react';
 import { BarChart3, FileText, List, Type, User, Bot, Download } from 'lucide-react';
 import type { AnalysisResult, EnhancedAnalysisDetails } from '../types/analysis';
@@ -9,6 +10,9 @@ import WordTable from './WordTable';
 import { MetricsBreakdown } from './MetricsBreakdown';
 import { StatisticsBanner } from './StatisticsBanner';
 import { NgramAnalysisModal } from './NgramAnalysis';
+import { PerplexityAnalysisModal } from './PerplexityAnalysis';
+import { BurstinessAnalysisModal } from './BurstinessAnalysis';
+import { SemanticAnalysisModal } from './SemanticAnalysis';
 
 interface AnalysisResultsProps {
   result: AnalysisResult;
@@ -17,6 +21,9 @@ interface AnalysisResultsProps {
 export const AnalysisResults: React.FC<AnalysisResultsProps> = ({ result }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'paragraph' | 'sentence' | 'words'>('overview');
   const [showNgramModal, setShowNgramModal] = useState(false);
+  const [showPerplexityModal, setShowPerplexityModal] = useState(false);
+  const [showBurstinessModal, setShowBurstinessModal] = useState(false);
+  const [showSemanticModal, setShowSemanticModal] = useState(false);
 
   const getScoreColor = (score: number): string => {
     if (score >= 0.7) return 'high';
@@ -46,13 +53,27 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({ result }) => {
     .slice(0, 10); // Show only top 10
 
   const handleDimensionClick = (dimension: string, details: EnhancedAnalysisDetails) => {
-    // Handle N-gram dimension specially
-    if (dimension === 'ngram_similarity' && details.ngram_analysis) {
-      setShowNgramModal(true);
-    } else {
-      // For other dimensions, show insights in a simple alert for now
-      // This can be expanded with more detailed modals later
-      alert(`${dimension} insights: Score ${(details.overall_score * 100).toFixed(1)}% - Click export for detailed analysis.`);
+    // Handle different analysis dimensions with their specific modals
+    switch (dimension) {
+      case 'ngram_similarity':
+        if (details.ngram_analysis) {
+          setShowNgramModal(true);
+        } else {
+          alert('N-gram analysis data not available for this text.');
+        }
+        break;
+      case 'perplexity':
+        setShowPerplexityModal(true);
+        break;
+      case 'burstiness':
+        setShowBurstinessModal(true);
+        break;
+      case 'semantic_coherence':
+        setShowSemanticModal(true);
+        break;
+      default:
+        // For other dimensions, show basic insights
+        alert(`${dimension} insights: Score ${(details.overall_score * 100).toFixed(1)}% - Click export for detailed analysis.`);
     }
   };
 
@@ -277,11 +298,32 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({ result }) => {
           </div>
         </div>
         
-        {/* N-gram Analysis Modal */}
+        {/* Analysis Modals */}
         {showNgramModal && result.enhanced_analysis?.ngram_details?.ngram_analysis && (
           <NgramAnalysisModal 
             ngramData={result.enhanced_analysis.ngram_details.ngram_analysis}
             onClose={() => setShowNgramModal(false)}
+          />
+        )}
+        
+        {showPerplexityModal && result.enhanced_analysis?.perplexity_details && (
+          <PerplexityAnalysisModal 
+            perplexityData={result.enhanced_analysis.perplexity_details}
+            onClose={() => setShowPerplexityModal(false)}
+          />
+        )}
+        
+        {showBurstinessModal && result.enhanced_analysis?.burstiness_details && (
+          <BurstinessAnalysisModal 
+            burstinessData={result.enhanced_analysis.burstiness_details}
+            onClose={() => setShowBurstinessModal(false)}
+          />
+        )}
+        
+        {showSemanticModal && result.enhanced_analysis?.semantic_details && (
+          <SemanticAnalysisModal 
+            semanticData={result.enhanced_analysis.semantic_details}
+            onClose={() => setShowSemanticModal(false)}
           />
         )}
       </div>

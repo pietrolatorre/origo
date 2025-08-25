@@ -94,6 +94,142 @@ export interface EnhancedAnalysisDetails {
   pattern_analysis?: PatternAnalysis;
   components?: Record<string, number>;
   text_stats?: Record<string, any>;
+  detailed_sentences?: DetailedSentence[];
+  sentence_clusters?: SentenceClusterAnalysis;
+  detailed_evidence?: SemanticEvidenceDetails;
+}
+
+// New interfaces for enhanced modal data
+export interface DetailedSentence {
+  text: string;
+  score: number;
+  perplexity_score: number;
+  stylistic_score: number;
+  register_score: number;
+  impactful_parts: ImpactfulPart[];
+  evidence: SentenceEvidence;
+}
+
+export interface ImpactfulPart {
+  text: string;
+  start_pos: number;
+  end_pos: number;
+  impact_type: string;
+  score: number;
+  explanation: string;
+}
+
+export interface SentenceEvidence {
+  suspicious_words: string[];
+  formulaic_phrases: string[];
+  transitions: string[];
+  register_issues: Record<string, any>;
+}
+
+export interface SentenceClusterAnalysis {
+  clusters: SentenceCluster[];
+  summary: ClusterSummary;
+}
+
+export interface SentenceCluster {
+  id: string;
+  structure_signature: string;
+  sentence_count: number;
+  sentences: ClusterSentence[];
+  statistics: ClusterStatistics;
+  uniformity_score: number;
+  ai_likelihood: number;
+}
+
+export interface ClusterSentence {
+  text: string;
+  length: number;
+  complexity: number;
+  start_pattern: string;
+}
+
+export interface ClusterStatistics {
+  avg_length: number;
+  length_variance: number;
+  avg_complexity: number;
+  complexity_variance: number;
+  dominant_start_pattern: string;
+  pattern_repetition_rate: number;
+}
+
+export interface ClusterSummary {
+  total_clusters: number;
+  clustering_rate: number;
+  uniformity_score: number;
+  ai_likelihood: number;
+  dominant_patterns: DominantPattern[];
+}
+
+export interface DominantPattern {
+  pattern: string;
+  sentence_count: number;
+  uniformity: number;
+}
+
+export interface SemanticEvidenceDetails {
+  coherence_patterns: CoherencePattern[];
+  flow_analysis: FlowAnalysis;
+  topic_clusters: TopicCluster[];
+  repetition_evidence: RepetitionEvidence[];
+  summary: SemanticSummary;
+}
+
+export interface CoherencePattern {
+  type: string;
+  start_sentence: number;
+  end_sentence: number;
+  coherence_score: number;
+  sentences: string[];
+  evidence: string;
+  ai_likelihood: number;
+}
+
+export interface FlowAnalysis {
+  flow_uniformity: number;
+  transitions: FlowTransition[];
+  avg_consecutive_similarity: number;
+}
+
+export interface FlowTransition {
+  type: string;
+  from_sentence: number;
+  to_sentence: number;
+  similarity: number;
+  evidence: string;
+  ai_likelihood: number;
+}
+
+export interface TopicCluster {
+  id: string;
+  sentence_indices: number[];
+  sentences: string[];
+  avg_similarity: number;
+  size: number;
+  evidence: string;
+  ai_likelihood: number;
+}
+
+export interface RepetitionEvidence {
+  sentence_1_index: number;
+  sentence_2_index: number;
+  sentence_1: string;
+  sentence_2: string;
+  similarity: number;
+  evidence: string;
+  ai_likelihood: number;
+}
+
+export interface SemanticSummary {
+  overall_coherence: number;
+  ai_likelihood: number;
+  analysis_confidence: string;
+  evidence_count: number;
+  primary_indicators: (string | null)[];
 }
 
 export interface UniqueWord {

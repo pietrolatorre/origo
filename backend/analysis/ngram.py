@@ -203,13 +203,13 @@ class NgramAnalyzer:
         
         return ai_score
     
-    def calculate_ngram_frequency_score(self, text: str, n: int, threshold_percent: float = 0.1) -> Tuple[float, List[Dict[str, Any]]]:
+    def calculate_ngram_frequency_score(self, text: str, n: int, threshold_percent: float = 0.05) -> Tuple[float, List[Dict[str, Any]]]:
         """
-        Calculate n-gram frequency score with thresholding
+        Calculate n-gram frequency score with improved thresholding for repetitive text detection
         Args:
             text: Text to analyze
             n: N-gram size
-            threshold_percent: Frequency threshold as percentage (e.g., 0.1 for 10%)
+            threshold_percent: Frequency threshold as percentage (lowered for better detection)
         Returns:
             Tuple of (score, suspicious_ngrams_list)
         """
@@ -222,66 +222,90 @@ class NgramAnalyzer:
         ngram_counts = Counter(ngrams)
         total_ngrams = len(ngrams)
         
-        # Calculate threshold
-        threshold = max(1, int(total_ngrams * threshold_percent))
+        # Improved threshold calculation - use minimum of 2 or percentage-based threshold
+        threshold = max(2, int(total_ngrams * threshold_percent))
         
-        # Find suspicious n-grams (above threshold)
-        suspicious_ngrams = []
+        # Find ALL n-grams with their frequencies for analysis
+        all_ngrams = []
         for ngram, count in ngram_counts.items():
-            if count > threshold:
-                frequency_ratio = count / total_ngrams
-                
-                # Score based on frequency (higher frequency = higher AI likelihood)
-                if frequency_ratio >= 0.3:  # Red: very frequent
-                    score = 0.8 + (frequency_ratio - 0.3) * 0.5
-                elif frequency_ratio >= 0.15:  # Yellow: moderately frequent
-                    score = 0.4 + (frequency_ratio - 0.15) * 2.67
-                else:  # Green but above threshold
-                    score = frequency_ratio * 2.67
-                
-                suspicious_ngrams.append({
+            frequency_ratio = count / total_ngrams
+            
+            # Enhanced scoring system - more sensitive to repetition and aggressive for high repetition
+            if count >= 3:  # 3 or more occurrences are suspicious
+                if frequency_ratio >= 0.15:  # Red: very frequent (15%+) - reduced threshold
+                    score = 0.85 + min(0.15, (frequency_ratio - 0.15) * 2.0)  # More aggressive scoring
+                elif frequency_ratio >= 0.08:  # Yellow: moderately frequent (8%+) - reduced threshold
+                    score = 0.6 + (frequency_ratio - 0.08) * 5.0
+                elif frequency_ratio >= 0.04:  # Light yellow: somewhat frequent (4%+) - reduced threshold
+                    score = 0.4 + (frequency_ratio - 0.04) * 8.0
+                else:
+                    score = frequency_ratio * 10.0  # Increased scale for visibility
+            elif count == 2:  # Exactly 2 occurrences
+                score = frequency_ratio * 5.0  # Increased moderate scoring
+            else:
+                score = 0.0  # Single occurrence, not suspicious
+            
+            # Only include if score > 0 for cleaner display
+            if score > 0:
+                all_ngrams.append({
                     'text': ' '.join(ngram),
                     'frequency': count,
                     'score': min(1.0, score),
                     'frequency_ratio': frequency_ratio
                 })
         
-        # Sort by score descending
-        suspicious_ngrams.sort(key=lambda x: x['score'], reverse=True)
+        # Sort by score then by frequency
+        all_ngrams.sort(key=lambda x: (x['score'], x['frequency']), reverse=True)
         
         # Calculate overall score for this n-gram length
-        if suspicious_ngrams:
-            # Weight by frequency and score
-            weighted_scores = [item['score'] * item['frequency_ratio'] for item in suspicious_ngrams]
-            overall_score = min(1.0, sum(weighted_scores) * 2)  # Scale appropriately
+        if all_ngrams:
+            # Weight by both frequency and score - emphasize high repetition
+            total_weight = 0
+            weighted_score_sum = 0
+            
+            for item in all_ngrams:
+                # Give more weight to higher frequency items with enhanced weighting
+                weight = (item['frequency'] ** 1.5) * item['frequency_ratio']  # Exponential frequency weight
+                weighted_score_sum += item['score'] * weight
+                total_weight += weight
+            
+            if total_weight > 0:
+                overall_score = min(1.0, weighted_score_sum / total_weight)
+            else:
+                overall_score = 0.0
+                
+            # Enhanced boost for multiple suspicious n-grams with higher multiplier
+            repetition_bonus = min(0.4, len(all_ngrams) * 0.08)  # Increased from 0.3 and 0.05
+            overall_score = min(1.0, overall_score + repetition_bonus)
         else:
             overall_score = 0.0
         
-        return overall_score, suspicious_ngrams[:10]  # Top 10 for display
+        return overall_score, all_ngrams[:15]  # Top 15 for better coverage
     
     def analyze_text(self, text: str) -> Dict[str, Any]:
         """
-        Enhanced comprehensive n-gram analysis with separate scoring for different lengths
+        Enhanced comprehensive n-gram analysis with improved scoring for repetitive text detection
         Args:
             text: Text to analyze
         Returns:
             Dictionary with analysis results
         """
-        # Calculate separate n-gram analysis for 2, 3, and 4-grams
-        bigram_score, bigram_details = self.calculate_ngram_frequency_score(text, 2, 0.1)
-        trigram_score, trigram_details = self.calculate_ngram_frequency_score(text, 3, 0.08)
-        fourgram_score, fourgram_details = self.calculate_ngram_frequency_score(text, 4, 0.05)
+        # Calculate separate n-gram analysis with optimized thresholds
+        # Lower thresholds for better detection of repetitive patterns
+        bigram_score, bigram_details = self.calculate_ngram_frequency_score(text, 2, 0.03)  # 3% threshold
+        trigram_score, trigram_details = self.calculate_ngram_frequency_score(text, 3, 0.02)  # 2% threshold
+        fourgram_score, fourgram_details = self.calculate_ngram_frequency_score(text, 4, 0.01)  # 1% threshold
         
         # Legacy analysis for compatibility
         phrase_repetition = self.calculate_phrase_repetition(text)
         transition_predictability = self.calculate_transition_predictability(text)
         lexical_diversity_score = self.calculate_lexical_diversity(text)
         
-        # Weighted scoring - longer n-grams are more suspicious
+        # Enhanced weighting - longer n-grams are much more suspicious
         ngram_weights = {
-            'bigram': 0.2,    # 2-grams are common, lower weight
-            'trigram': 0.4,   # 3-grams more significant
-            'fourgram': 0.6   # 4-grams most suspicious
+            'bigram': 0.15,   # 2-grams are common, lower weight
+            'trigram': 0.35,  # 3-grams more significant
+            'fourgram': 0.5   # 4-grams most suspicious (increased weight)
         }
         
         # Calculate weighted n-gram score
@@ -291,12 +315,12 @@ class NgramAnalyzer:
             fourgram_score * ngram_weights['fourgram']
         ) / sum(ngram_weights.values())
         
-        # Combined overall score
+        # Enhanced overall score calculation - give more weight to n-gram patterns
         overall_score = (
-            weighted_ngram_score * 0.5 +
-            phrase_repetition * 0.15 +
+            weighted_ngram_score * 0.6 +  # Increased from 0.5
+            phrase_repetition * 0.1 +     # Reduced from 0.15
             transition_predictability * 0.2 +
-            lexical_diversity_score * 0.15
+            lexical_diversity_score * 0.1  # Reduced from 0.15
         )
         
         return {

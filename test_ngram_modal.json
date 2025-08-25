@@ -1,9 +1,0 @@
-{
-  "repetitive_test_text": "The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The quick brown fox jumps over the lazy dog. The same phrase repeats here. The same phrase repeats here. The same phrase repeats here. Another identical sentence structure follows. Another identical sentence structure follows. Another identical sentence structure follows. This pattern continues with high repetition. This pattern continues with high repetition. This pattern continues with high repetition.",
-  "description": "Test text with highly repetitive patterns to verify N-gram scoring",
-  "expected_ngrams": {
-    "bigrams": ["the quick", "quick brown", "brown fox", "fox jumps", "over the", "the lazy", "the same", "same phrase", "phrase repeats"],
-    "trigrams": ["the quick brown", "quick brown fox", "brown fox jumps", "fox jumps over", "jumps over the", "over the lazy", "the same phrase", "same phrase repeats", "phrase repeats here"],
-    "fourgrams": ["the quick brown fox", "quick brown fox jumps", "brown fox jumps over", "fox jumps over the", "jumps over the lazy", "the same phrase repeats", "same phrase repeats here"]
-  }
-}

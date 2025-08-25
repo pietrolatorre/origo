@@ -5,7 +5,7 @@
 // Modal imports
 import React, { useState } from 'react';
 import { BarChart3, FileText, List, Type, User, Bot, Download } from 'lucide-react';
-import type { AnalysisResult, EnhancedAnalysisDetails } from '../types/analysis';
+import type { AnalysisResult, EnhancedAnalysisDetails, DimensionToggleSettings } from '../types/analysis';
 import WordTable from './WordTable';
 import { MetricsBreakdown } from './MetricsBreakdown';
 import { StatisticsBanner } from './StatisticsBanner';
@@ -16,9 +16,10 @@ import { SemanticAnalysisModal } from './SemanticAnalysis';
 
 interface AnalysisResultsProps {
   result: AnalysisResult;
+  enabledDimensions?: DimensionToggleSettings;
 }
 
-export const AnalysisResults: React.FC<AnalysisResultsProps> = ({ result }) => {
+export const AnalysisResults: React.FC<AnalysisResultsProps> = ({ result, enabledDimensions }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'paragraph' | 'sentence' | 'words'>('overview');
   const [showNgramModal, setShowNgramModal] = useState(false);
   const [showPerplexityModal, setShowPerplexityModal] = useState(false);
@@ -33,18 +34,16 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({ result }) => {
 
   const isSignificantScore = (score: number): boolean => score >= 0.6;  // Changed from 0.4 to 0.6
 
-  // Filter and sort paragraphs with significant scores (yellow/red) - sorted by score descending
-  const significantParagraphs = result.paragraphs
-    .filter(p => isSignificantScore(p.score))
+  // Get top 10 paragraphs by score (not filtered by threshold)
+  const topParagraphs = result.paragraphs
     .sort((a, b) => b.score - a.score)
-    .slice(0, 10); // Show only top 10
+    .slice(0, 10);
 
-  // Get all sentences with significant scores, sorted by score descending, limited to top 10
-  const significantSentences = result.paragraphs
+  // Get top 10 sentences by score (not filtered by threshold)
+  const topSentences = result.paragraphs
     .flatMap(p => p.sentences || [])
-    .filter(s => isSignificantScore(s.score))
     .sort((a, b) => b.score - a.score)
-    .slice(0, 10); // Show only top 10
+    .slice(0, 10);
 
   // Filter words with significant scores, sorted by score descending, limited to top 10
   const significantWords = (result.word_analysis?.unique_words || [])
@@ -216,20 +215,34 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({ result }) => {
                 <MetricsBreakdown 
                   scores={result.global_scores} 
                   enhancedAnalysis={result.enhanced_analysis}
+                  enabledDimensions={enabledDimensions}
                   onDimensionClick={handleDimensionClick}
                 />
+                
+                {/* Processing Time Display */}
+                {result.analysis_metadata?.processing_time_seconds && (
+                  <div className="processing-time-display">
+                    <span className="processing-time-text">
+                      Analysis completed in {result.analysis_metadata.processing_time_seconds}s
+                    </span>
+                  </div>
+                )}
               </div>
             )}
 
             {activeTab === 'paragraph' && (
               <div className="paragraph-tab">
-                {significantParagraphs.length === 0 ? (
+                <div className="tab-section-header">
+                  <h4>Top 10 Paragraphs by AI Probability Score</h4>
+                  <span className="tab-section-subtitle">Showing paragraphs with highest scores regardless of threshold</span>
+                </div>
+                {topParagraphs.length === 0 ? (
                   <div className="no-significant-elements">
-                    No significant elements in this analysis dimension show evidence of AI-generated content.
+                    No paragraphs found in the analysis.
                   </div>
                 ) : (
                   <div className="paragraph-analysis">
-                    {significantParagraphs.map((paragraph, paragraphIndex) => (
+                    {topParagraphs.map((paragraph, paragraphIndex) => (
                       <div key={paragraphIndex} className="sentence-item-new">
                         <div className={`sentence-background ${getScoreColor(paragraph.score)}`}>
                           <div className="sentence-text-new">{paragraph.text}</div>
@@ -239,11 +252,6 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({ result }) => {
                         </div>
                       </div>
                     ))}
-                    {significantParagraphs.length === 10 && (
-                      <div className="results-limit-notice">
-                        Showing top 10 results. Export report for complete analysis.
-                      </div>
-                    )}
                   </div>
                 )}
               </div>
@@ -251,13 +259,17 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({ result }) => {
 
             {activeTab === 'sentence' && (
               <div className="sentence-tab">
-                {significantSentences.length === 0 ? (
+                <div className="tab-section-header">
+                  <h4>Top 10 Sentences by AI Probability Score</h4>
+                  <span className="tab-section-subtitle">Showing sentences with highest scores regardless of threshold</span>
+                </div>
+                {topSentences.length === 0 ? (
                   <div className="no-significant-elements">
-                    No significant elements in this analysis dimension show evidence of AI-generated content.
+                    No sentences found in the analysis.
                   </div>
                 ) : (
                   <div className="sentence-analysis">
-                    {significantSentences.map((sentence, sentIndex) => (
+                    {topSentences.map((sentence, sentIndex) => (
                       <div key={sentIndex} className="sentence-item-new">
                         <div className={`sentence-background ${getScoreColor(sentence.score)}`}>
                           <div className="sentence-text-new">{sentence.text}</div>
@@ -267,11 +279,6 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({ result }) => {
                         </div>
                       </div>
                     ))}
-                    {significantSentences.length === 10 && (
-                      <div className="results-limit-notice">
-                        Showing top 10 results. Export report for complete analysis.
-                      </div>
-                    )}
                   </div>
                 )}
               </div>

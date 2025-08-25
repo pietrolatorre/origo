@@ -3,7 +3,7 @@
  */
 
 import axios from 'axios';
-import type { AnalysisResult, TextAnalysisRequest } from '../types/analysis';
+import type { AnalysisResult, TextAnalysisRequest, DimensionToggleSettings } from '../types/analysis';
 
 // Configure axios defaults
 const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
@@ -53,9 +53,10 @@ apiClient.interceptors.response.use(
 /**
  * Analyze text for AI-generated content detection
  * @param text - Text to analyze
+ * @param enabledDimensions - Which analysis dimensions to include
  * @returns Promise with analysis results
  */
-export const analyzeText = async (text: string): Promise<AnalysisResult> => {
+export const analyzeText = async (text: string, enabledDimensions?: DimensionToggleSettings): Promise<AnalysisResult> => {
   if (!text || text.trim().length < 10) {
     throw new Error('Text must be at least 10 characters long');
   }
@@ -64,7 +65,10 @@ export const analyzeText = async (text: string): Promise<AnalysisResult> => {
     throw new Error('Text must be less than 50,000 characters');
   }
 
-  const request: TextAnalysisRequest = { text: text.trim() };
+  const request: TextAnalysisRequest = { 
+    text: text.trim(),
+    enabled_dimensions: enabledDimensions
+  };
   
   try {
     const response = await apiClient.post<AnalysisResult>('/analyze', request);

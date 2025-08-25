@@ -4,7 +4,7 @@
 
 import React from 'react';
 import { Brain, Zap, Repeat, Link } from 'lucide-react';
-import type { GlobalScores, EnhancedAnalysisDetails } from '../types/analysis';
+import type { GlobalScores, EnhancedAnalysisDetails, DimensionToggleSettings } from '../types/analysis';
 
 interface MetricsBreakdownProps {
   scores: GlobalScores;
@@ -14,6 +14,7 @@ interface MetricsBreakdownProps {
     ngram_details: EnhancedAnalysisDetails;
     semantic_details: EnhancedAnalysisDetails;
   };
+  enabledDimensions?: DimensionToggleSettings;
   onDimensionClick?: (dimension: string, details: EnhancedAnalysisDetails) => void;
 }
 
@@ -28,6 +29,7 @@ const DEFAULT_WEIGHTS: Record<string, number> = {
 export const MetricsBreakdown: React.FC<MetricsBreakdownProps> = ({ 
   scores, 
   enhancedAnalysis, 
+  enabledDimensions,
   onDimensionClick 
 }) => {
   const getMetricIcon = (metric: string) => {
@@ -71,7 +73,21 @@ export const MetricsBreakdown: React.FC<MetricsBreakdownProps> = ({
     return 'low';
   };
 
+  const isDimensionEnabled = (metric: string): boolean => {
+    if (!enabledDimensions) return true;
+    const dimensionMap: Record<string, keyof DimensionToggleSettings> = {
+      'perplexity': 'perplexity',
+      'burstiness': 'burstiness',
+      'semantic_coherence': 'semantic_coherence',
+      'ngram_similarity': 'ngram_similarity'
+    };
+    return enabledDimensions[dimensionMap[metric]] !== false;
+  };
+
   const handleDimensionClick = (metric: string) => {
+    // Only allow clicks on enabled dimensions
+    if (!isDimensionEnabled(metric)) return;
+    
     if (onDimensionClick && enhancedAnalysis) {
       const detailsMap: Record<string, EnhancedAnalysisDetails> = {
         perplexity: enhancedAnalysis.perplexity_details,
@@ -93,12 +109,25 @@ export const MetricsBreakdown: React.FC<MetricsBreakdownProps> = ({
         {Object.entries(scores).map(([metric, score]) => {
           const weight = DEFAULT_WEIGHTS[metric] || 0.25;
           const scoreColor = getScoreColor(score);
+          const isEnabled = isDimensionEnabled(metric);
+          const isClickable = onDimensionClick && isEnabled;
+          
           return (
             <div 
               key={metric} 
-              className={`metric-dimension ${onDimensionClick ? 'clickable' : ''}`}
+              className={`metric-dimension ${
+                isClickable ? 'clickable' : ''
+              } ${
+                !isEnabled ? 'disabled' : ''
+              }`}
               onClick={() => handleDimensionClick(metric)}
-              title={onDimensionClick ? 'Click to view detailed insights' : undefined}
+              title={
+                !isEnabled 
+                  ? 'This dimension is disabled' 
+                  : isClickable 
+                    ? 'Click to view detailed insights' 
+                    : undefined
+              }
             >
               <div className="metric-header-centered">
                 <div className="metric-icon-centered">
@@ -109,10 +138,15 @@ export const MetricsBreakdown: React.FC<MetricsBreakdownProps> = ({
               <div className="metric-content-below">
                 <div className="metric-description-left">
                   <p>{getMetricExplanation(metric)}</p>
+                  {!isEnabled && (
+                    <p className="disabled-notice">This dimension was excluded from analysis</p>
+                  )}
                 </div>
                 <div className="metric-score-right">
-                  <div className={`score-circle ${scoreColor}`}>
-                    <span className={`score-percentage ${scoreColor}`}>{Math.round(score * 100)}%</span>
+                  <div className={`score-circle ${isEnabled ? scoreColor : 'disabled'}`}>
+                    <span className={`score-percentage ${isEnabled ? scoreColor : 'disabled'}`}>
+                      {isEnabled ? Math.round(score * 100) : '--'}%
+                    </span>
                   </div>
                   <span className="metric-weight">Weight: {Math.round(weight * 100)}%</span>
                 </div>

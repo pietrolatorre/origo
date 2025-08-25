@@ -6,19 +6,43 @@ Origo is a comprehensive web application that analyzes English text to estimate 
 
 **Important:** AI-generated text detection is imperfect. This tool provides probabilistic signals — not conclusive proof. It is meant to support human judgment, not replace it.
 
-## 🎯 Features
+## 🎯 Key Features
 
-- **Enhanced Multi-heuristic Analysis**: Combines perplexity, burstiness, semantic coherence, and advanced n-gram similarity
-- **Separate N-gram Analysis**: Individual 2-gram, 3-gram, and 4-gram analysis with frequency thresholding
-- **Advanced Pattern Detection**: Suspicious formatting, reader questions, paragraph structure analysis
-- **Clickable Dimension Insights**: Interactive overview with detailed modal views
-- **Parallel Processing Optimization**: Faster analysis with concurrent module execution
-- **Granular Insights**: Analysis at paragraph, sentence, and word levels
-- **Interactive Visualization**: Color-coded highlights, tooltips, and expandable details
-- **Responsive Design**: Works on desktop and tablet devices
-- **Real-time Processing**: Fast analysis with progress indication
-- **Word Impact Analysis**: Detailed breakdown of influential words
-- **PDF Export**: Comprehensive analysis reports for professional documentation
+### Core Analysis
+- **4 Analysis Dimensions**: Perplexity, Burstiness, Semantic Coherence, N-gram Similarity
+- **Selective Analysis**: Toggle individual dimensions on/off for customized analysis
+- **Enhanced Scoring**: Focuses on worst-case patterns using average of values above threshold
+- **Performance Optimized**: Parallel processing with intelligent caching (30,000x+ speedup)
+
+### User Interface
+- **Language Support**: English (active), Italian (coming soon)
+- **Interactive Dimensions**: Click any metric for detailed insights with evidence
+- **Smart Display**: Shows top 10 results regardless of threshold to avoid empty displays
+- **Processing Time**: Real-time display of analysis duration
+- **Floating Paste Button**: Convenient clipboard integration
+
+### Analysis Insights
+- **Perplexity Modal**: Top 10 sentences with highlighted impactful parts
+- **Burstiness Modal**: Sentence clusters with similar structures and lengths
+- **Semantic Modal**: Coherence patterns, topic clusters, and semantic evidence
+- **N-gram Modal**: Enhanced pattern detection with exponential frequency weighting
+
+## 📊 Scoring Methodology
+
+### New Aggregation Approach
+Origo now uses **worst-case aggregation** instead of simple averaging:
+- Focuses on text sections scoring above 60% (yellow threshold)
+- Calculates average of high-scoring segments only
+- Highlights problematic patterns rather than diluting with normal text
+- Provides more accurate detection of mixed human/AI content
+
+### Threshold Interpretation
+- **Green (0-60%)**: Low AI probability
+- **Yellow (60-70%)**: Medium AI probability  
+- **Red (70-100%)**: High AI probability
+
+### Dimension Weighting
+All dimensions have equal weight (25% each) in the final score when enabled.
 
 ## 🛠 Technology Stack
 
@@ -108,41 +132,87 @@ npm run dev
 npm run build
 ```
 
-## 📖 API Documentation
+## 📊 Backend Output Structure
 
-### Analyze Text Endpoint
-
-**POST** `/analyze`
-
-Analyzes text for AI-generated content detection.
-
-#### Request Body
+### Complete Analysis Response
 ```json
 {
-  "text": "Your text to analyze here..."
-}
-```
-
-#### Response
-```json
-{
-  "overall_score": 0.78,
+  "overall_score": 0.72,
   "global_scores": {
-    "perplexity": 0.83,
-    "burstiness": 0.72,
-    "semantic_coherence": 0.65,
-    "ngram_similarity": 0.89
+    "perplexity": 0.68,
+    "burstiness": 0.75,
+    "semantic_coherence": 0.69,
+    "ngram_similarity": 0.78
+  },
+  "enhanced_analysis": {
+    "perplexity_details": {
+      "overall_score": 0.68,
+      "detailed_sentences": [
+        {
+          "text": "Sample sentence text",
+          "score": 0.82,
+          "impactful_parts": [
+            {
+              "text": "leverage",
+              "impact_type": "suspicious_verb",
+              "score": 0.85,
+              "explanation": "Verb commonly overused in AI-generated text"
+            }
+          ]
+        }
+      ]
+    },
+    "burstiness_details": {
+      "overall_score": 0.75,
+      "sentence_clusters": {
+        "clusters": [
+          {
+            "structure_signature": "determiner-adjective-noun-verb",
+            "sentence_count": 5,
+            "uniformity_score": 0.89
+          }
+        ]
+      }
+    },
+    "semantic_details": {
+      "overall_score": 0.69,
+      "detailed_evidence": {
+        "coherence_patterns": [
+          {
+            "type": "topic_cluster",
+            "coherence_score": 0.91,
+            "evidence": "Unusual semantic clustering detected"
+          }
+        ]
+      }
+    },
+    "ngram_details": {
+      "overall_score": 0.78,
+      "ngram_analysis": {
+        "bigrams": {
+          "score": 0.72,
+          "details": [
+            {
+              "text": "it is",
+              "frequency": 12,
+              "score": 0.85,
+              "frequency_ratio": 0.08
+            }
+          ]
+        }
+      }
+    }
   },
   "paragraphs": [
     {
-      "text": "Paragraph text...",
-      "score": 0.80,
+      "text": "Full paragraph text...",
+      "score": 0.74,
       "sentences": [
         {
-          "text": "Sentence text...",
-          "score": 0.91,
+          "text": "Individual sentence text...",
+          "score": 0.81,
           "words": [
-            {"word": "thus", "score": 0.92}
+            {"word": "furthermore", "score": 0.89}
           ]
         }
       ]
@@ -150,11 +220,59 @@ Analyzes text for AI-generated content detection.
   ],
   "word_analysis": {
     "unique_words": [
-      {"word": "hence", "average_score": 0.91, "count": 3}
-    ]
+      {
+        "word": "delve",
+        "average_score": 0.94,
+        "count": 2,
+        "category": "suspicious_verb"
+      }
+    ],
+    "suspicious_words_found": 8,
+    "total_unique_words": 145
+  },
+  "analysis_metadata": {
+    "text_length": 1247,
+    "word_count": 198,
+    "sentence_count": 12,
+    "paragraph_count": 3,
+    "processing_time_seconds": 2.34,
+    "parallel_processing_enabled": true,
+    "caching_enabled": true
   }
 }
 ```
+
+## 📖 API Documentation
+
+### Analyze Text Endpoint
+
+**POST** `/analyze`
+
+Analyzes text for AI-generated content detection with optional dimension selection.
+
+#### Request Body
+```json
+{
+  "text": "Your text to analyze here...",
+  "enabled_dimensions": {
+    "perplexity": true,
+    "burstiness": true,
+    "semantic_coherence": true,
+    "ngram_similarity": false
+  }
+}
+```
+
+#### Parameters
+- **text** (required): Text to analyze (10-50,000 characters)
+- **enabled_dimensions** (optional): Object specifying which analysis dimensions to include
+  - **perplexity**: GPT-2 based predictability analysis
+  - **burstiness**: Sentence structure variation analysis
+  - **semantic_coherence**: Meaning consistency analysis
+  - **ngram_similarity**: Repetitive pattern detection
+
+#### Response
+Returns complete analysis results (see Backend Output Structure above).
 
 ### Other Endpoints
 

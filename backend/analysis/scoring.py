@@ -108,16 +108,26 @@ class ScoreFusion:
             del self.cache[oldest_key]
             del self.cache_timestamps[oldest_key]
     
-    def analyze_text_comprehensive(self, text: str) -> Dict[str, Any]:
+    def analyze_text_comprehensive(self, text: str, enabled_dimensions: Dict[str, bool] = None) -> Dict[str, Any]:
         """
         Perform comprehensive analysis using all available methods with caching and parallel processing
         Args:
             text: Input text to analyze
+            enabled_dimensions: Dictionary specifying which dimensions to include (default: all enabled)
         Returns:
             Complete analysis results with combined scores
         """
         if not text or len(text.strip()) < 10:
             return self._create_empty_result()
+        
+        # Default to all dimensions enabled if not specified
+        if enabled_dimensions is None:
+            enabled_dimensions = {
+                'perplexity': True,
+                'burstiness': True,
+                'semantic_coherence': True,
+                'ngram_similarity': True
+            }
         
         # Check cache first
         cache_key = self._get_cache_key(text, 'comprehensive')
@@ -132,22 +142,31 @@ class ScoreFusion:
         try:
             if self.parallel_enabled:
                 # Run analysis modules in parallel for better performance
-                analysis_results = self._run_optimized_parallel_analysis(text)
+                analysis_results = self._run_optimized_parallel_analysis(text, enabled_dimensions)
             else:
                 # Fallback to sequential analysis
-                analysis_results = self._run_sequential_analysis(text)
+                analysis_results = self._run_sequential_analysis(text, enabled_dimensions)
             
-            # Extract scores from results
+            # Extract scores from results using new aggregation method
             scores = {
-                'perplexity': self._extract_score(analysis_results.get('perplexity', {}), 'perplexity'),
-                'burstiness': self._extract_score(analysis_results.get('burstiness', {}), 'burstiness'),
-                'ngram_similarity': self._extract_score(analysis_results.get('ngram', {}), 'ngram'),
-                'semantic_coherence': self._extract_score(analysis_results.get('semantic', {}), 'semantic')
+                'perplexity': self._extract_score_with_aggregation(analysis_results.get('perplexity', {}), 'perplexity') if enabled_dimensions.get('perplexity', True) else 0.0,
+                'burstiness': self._extract_score_with_aggregation(analysis_results.get('burstiness', {}), 'burstiness') if enabled_dimensions.get('burstiness', True) else 0.0,
+                'ngram_similarity': self._extract_score_with_aggregation(analysis_results.get('ngram', {}), 'ngram') if enabled_dimensions.get('ngram_similarity', True) else 0.0,
+                'semantic_coherence': self._extract_score_with_aggregation(analysis_results.get('semantic', {}), 'semantic') if enabled_dimensions.get('semantic_coherence', True) else 0.0
             }
             
-            # Calculate weighted overall score
+            # Calculate weighted overall score only for enabled dimensions
             self.validate_weights()
-            overall_score = sum(scores[key] * self.weights[key] for key in scores)
+            enabled_weights = {k: v for k, v in self.weights.items() if enabled_dimensions.get(k.replace('_similarity', '').replace('_coherence', ''), True)}
+            
+            # Normalize weights for enabled dimensions
+            total_enabled_weight = sum(enabled_weights.values())
+            if total_enabled_weight > 0:
+                normalized_weights = {k: v / total_enabled_weight for k, v in enabled_weights.items()}
+                overall_score = sum(scores[key] * normalized_weights.get(key, 0) for key in scores if scores[key] > 0)
+            else:
+                overall_score = 0.5  # Default when no dimensions enabled
+            
             overall_score = max(0.0, min(1.0, overall_score))  # Clamp to [0,1]
             
             # Optimize paragraph and sentence analysis with selective processing
@@ -199,34 +218,39 @@ class ScoreFusion:
             logger.error(f"Error in comprehensive analysis: {e}")
             return self._create_error_result(str(e))
     
-    def _run_optimized_parallel_analysis(self, text: str) -> Dict[str, Any]:
+    def _run_optimized_parallel_analysis(self, text: str, enabled_dimensions: Dict[str, bool] = None) -> Dict[str, Any]:
         """
         Run all analysis modules in parallel with optimized performance settings
         Args:
             text: Text to analyze
+            enabled_dimensions: Dictionary specifying which dimensions to include
         Returns:
-            Dictionary with results from all analyzers
+            Dictionary with results from enabled analyzers
         """
         results = {}
+        
+        if enabled_dimensions is None:
+            enabled_dimensions = {'perplexity': True, 'burstiness': True, 'semantic_coherence': True, 'ngram_similarity': True}
         
         # Check cache for individual components first
         cached_components = {}
         for component in ['perplexity', 'burstiness', 'ngram', 'semantic']:
-            cache_key = self._get_cache_key(text, component)
-            cached_result = self._get_from_cache(cache_key)
-            if cached_result is not None:
-                cached_components[component] = cached_result
-                logger.info(f"Retrieved {component} analysis from cache")
+            if self._should_include_dimension(component, enabled_dimensions):
+                cache_key = self._get_cache_key(text, component)
+                cached_result = self._get_from_cache(cache_key)
+                if cached_result is not None:
+                    cached_components[component] = cached_result
+                    logger.info(f"Retrieved {component} analysis from cache")
         
-        # Define analysis tasks only for non-cached components
+        # Define analysis tasks only for non-cached enabled components
         analysis_tasks = {}
-        if 'perplexity' not in cached_components:
+        if 'perplexity' not in cached_components and enabled_dimensions.get('perplexity', True):
             analysis_tasks['perplexity'] = lambda: perplexity_analyzer.analyze_text(text)
-        if 'burstiness' not in cached_components:
+        if 'burstiness' not in cached_components and enabled_dimensions.get('burstiness', True):
             analysis_tasks['burstiness'] = lambda: burstiness_analyzer.analyze_text(text)
-        if 'ngram' not in cached_components:
+        if 'ngram' not in cached_components and enabled_dimensions.get('ngram_similarity', True):
             analysis_tasks['ngram'] = lambda: ngram_analyzer.analyze_text_with_patterns(text)
-        if 'semantic' not in cached_components:
+        if 'semantic' not in cached_components and enabled_dimensions.get('semantic_coherence', True):
             analysis_tasks['semantic'] = lambda: semantic_analyzer.analyze_text(text)
         
         # Use cached results
@@ -256,22 +280,120 @@ class ScoreFusion:
         
         return results
     
-    def _run_sequential_analysis(self, text: str) -> Dict[str, Any]:
+    def _should_include_dimension(self, component: str, enabled_dimensions: Dict[str, bool]) -> bool:
+        """
+        Check if a component should be included based on enabled dimensions
+        Args:
+            component: Component name ('perplexity', 'burstiness', 'ngram', 'semantic')
+            enabled_dimensions: Dictionary of enabled dimensions
+        Returns:
+            True if component should be included
+        """
+        dimension_mapping = {
+            'perplexity': 'perplexity',
+            'burstiness': 'burstiness', 
+            'ngram': 'ngram_similarity',
+            'semantic': 'semantic_coherence'
+        }
+        return enabled_dimensions.get(dimension_mapping.get(component, component), True)
+    
+    def _extract_score_with_aggregation(self, result: Any, analysis_type: str) -> float:
+        """
+        Extract overall score from analysis result using new aggregation method:
+        For dimensions with multiple components, use average of values above threshold
+        Args:
+            result: Analysis result from analyzer
+            analysis_type: Type of analysis ('perplexity', 'burstiness', 'ngram', 'semantic')
+        Returns:
+            Overall score as float between 0.0 and 1.0
+        """
+        try:
+            if isinstance(result, (int, float)):
+                score = float(result)
+            elif isinstance(result, dict):
+                # Check if we have paragraph/sentence level data for aggregation
+                if 'paragraphs' in result or 'sentences' in result:
+                    score = self._aggregate_scores_above_threshold(result)
+                else:
+                    score = float(result.get('overall_score', 0.5))
+            else:
+                logger.warning(f"Unexpected result format for {analysis_type}: {type(result)}")
+                score = 0.5
+            
+            # Ensure score is within valid range [0.0, 1.0]
+            score = max(0.0, min(1.0, score))
+            return score
+            
+        except (ValueError, TypeError, KeyError) as e:
+            logger.warning(f"Error extracting score for {analysis_type}: {e}, using default")
+            return 0.5
+    
+    def _aggregate_scores_above_threshold(self, result: Dict[str, Any]) -> float:
+        """
+        Aggregate scores using average of values above threshold (0.6 for yellow threshold)
+        This highlights the worst parts rather than averaging everything
+        Args:
+            result: Analysis result with paragraph/sentence data
+        Returns:
+            Aggregated score focusing on high-scoring (problematic) parts
+        """
+        threshold = 0.6  # Yellow threshold
+        high_scores = []
+        
+        # Collect scores from paragraphs
+        if 'paragraphs' in result:
+            for paragraph in result['paragraphs']:
+                if isinstance(paragraph, dict) and 'score' in paragraph:
+                    score = float(paragraph['score'])
+                    if score >= threshold:
+                        high_scores.append(score)
+                        
+                # Also check sentences within paragraphs
+                if 'sentences' in paragraph:
+                    for sentence in paragraph['sentences']:
+                        if isinstance(sentence, dict) and 'score' in sentence:
+                            score = float(sentence['score'])
+                            if score >= threshold:
+                                high_scores.append(score)
+        
+        # Collect scores from direct sentences list
+        if 'sentences' in result:
+            for sentence in result['sentences']:
+                if isinstance(sentence, dict) and 'score' in sentence:
+                    score = float(sentence['score'])
+                    if score >= threshold:
+                        high_scores.append(score)
+        
+        # If we have high scores, use their average
+        if high_scores:
+            return sum(high_scores) / len(high_scores)
+        
+        # If no high scores, fall back to overall score or default
+        return float(result.get('overall_score', 0.5))
+    
+    def _run_sequential_analysis(self, text: str, enabled_dimensions: Dict[str, bool] = None) -> Dict[str, Any]:
         """
         Run analysis modules sequentially as fallback
         Args:
             text: Text to analyze
+            enabled_dimensions: Dictionary specifying which dimensions to include
         Returns:
-            Dictionary with results from all analyzers
+            Dictionary with results from enabled analyzers
         """
         results = {}
         
-        analysis_methods = [
-            ('perplexity', lambda: perplexity_analyzer.analyze_text(text)),
-            ('burstiness', lambda: burstiness_analyzer.analyze_text(text)),
-            ('ngram', lambda: ngram_analyzer.analyze_text_with_patterns(text)),
-            ('semantic', lambda: semantic_analyzer.analyze_text(text))
-        ]
+        if enabled_dimensions is None:
+            enabled_dimensions = {'perplexity': True, 'burstiness': True, 'semantic_coherence': True, 'ngram_similarity': True}
+        
+        analysis_methods = []
+        if enabled_dimensions.get('perplexity', True):
+            analysis_methods.append(('perplexity', lambda: perplexity_analyzer.analyze_text(text)))
+        if enabled_dimensions.get('burstiness', True):
+            analysis_methods.append(('burstiness', lambda: burstiness_analyzer.analyze_text(text)))
+        if enabled_dimensions.get('ngram_similarity', True):
+            analysis_methods.append(('ngram', lambda: ngram_analyzer.analyze_text_with_patterns(text)))
+        if enabled_dimensions.get('semantic_coherence', True):
+            analysis_methods.append(('semantic', lambda: semantic_analyzer.analyze_text(text)))
         
         for name, method in analysis_methods:
             try:

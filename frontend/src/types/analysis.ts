@@ -252,6 +252,8 @@ export interface AnalysisMetadata {
   paragraph_count: number;
   weights_used?: Record<string, number>;
   parallel_processing_enabled?: boolean;
+  caching_enabled?: boolean;
+  processing_time_seconds?: number;
   enhanced_features_enabled?: {
     stylistic_analysis: boolean;
     register_analysis: boolean;
@@ -276,6 +278,27 @@ export interface AnalysisResult {
 
 export interface TextAnalysisRequest {
   text: string;
+  enabled_dimensions?: {
+    perplexity: boolean;
+    burstiness: boolean;
+    semantic_coherence: boolean;
+    ngram_similarity: boolean;
+  };
+}
+
+export interface AnalysisDimension {
+  id: keyof GlobalScores;
+  name: string;
+  description: string;
+  icon: string;
+  enabled: boolean;
+}
+
+export interface DimensionToggleSettings {
+  perplexity: boolean;
+  burstiness: boolean;
+  semantic_coherence: boolean;
+  ngram_similarity: boolean;
 }
 
 export interface HighlightInfo {

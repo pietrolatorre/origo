@@ -3,7 +3,7 @@
  */
 
 import React, { useState, useCallback, useEffect } from 'react';
-import { Send, Trash2, Loader2 } from 'lucide-react';
+import { Send, Trash2, Loader2, ClipboardPaste, Globe } from 'lucide-react';
 
 interface TextInputProps {
   onAnalyze: (text: string) => void;
@@ -19,6 +19,7 @@ export const TextInput: React.FC<TextInputProps> = ({
   error
 }) => {
   const [text, setText] = useState('');
+  const [showPasteButton, setShowPasteButton] = useState(false);
 
   // Sample text for demonstration
   const sampleText = `Artificial intelligence has revolutionized numerous industries and transformed how we approach complex problems. Machine learning algorithms can now process vast amounts of data with unprecedented accuracy and speed. These systems demonstrate remarkable capabilities in pattern recognition, natural language processing, and predictive analytics. The integration of AI technologies continues to expand across various sectors, including healthcare, finance, and transportation. As these systems become more sophisticated, they enable innovative solutions that were previously unimaginable. The potential applications seem limitless, offering exciting possibilities for the future.`;
@@ -53,6 +54,23 @@ export const TextInput: React.FC<TextInputProps> = ({
     }
   }, [handleAnalyze]);
 
+  const handlePaste = useCallback(async () => {
+    try {
+      const clipboardText = await navigator.clipboard.readText();
+      setText(clipboardText);
+    } catch (err) {
+      console.error('Failed to read clipboard:', err);
+    }
+  }, []);
+
+  const handleMouseEnter = useCallback(() => {
+    setShowPasteButton(true);
+  }, []);
+
+  const handleMouseLeave = useCallback(() => {
+    setShowPasteButton(false);
+  }, []);
+
   const isDisabled = text.length < 10 || isAnalyzing;
   const isOverLimit = text.length > 50000;
 
@@ -60,19 +78,48 @@ export const TextInput: React.FC<TextInputProps> = ({
     <div className="text-input-section">
       <div className="input-header">
         <h2>Input text</h2>
+        <div className="language-tabs">
+          <div className={`language-tab active`}>
+            <Globe size={14} />
+            EN
+          </div>
+          <div className="language-tab coming-soon">
+            <Globe size={14} />
+            IT
+            <span className="coming-soon-badge">coming soon</span>
+          </div>
+        </div>
       </div>
 
       <div className="input-container">
-        <textarea
-          className={`text-input ${error ? 'error' : ''} ${isOverLimit ? 'over-limit' : ''}`}
-          placeholder="Sample text loaded for demonstration. Replace with your own text for AI detection analysis...\n\nMinimum 10 characters required. The analysis will examine:\n• Perplexity patterns using GPT-2\n• Sentence structure and variation\n• N-gram repetition and similarity\n• Semantic coherence patterns\n\nPress Ctrl+Enter to analyze quickly."
-          value={text}
-          onChange={handleTextChange}
-          onKeyDown={handleKeyDown}
-          disabled={isAnalyzing}
-          rows={12}
-          maxLength={50000}
-        />
+        <div 
+          className="textarea-wrapper"
+          onMouseEnter={handleMouseEnter}
+          onMouseLeave={handleMouseLeave}
+        >
+          <textarea
+            className={`text-input ${error ? 'error' : ''} ${isOverLimit ? 'over-limit' : ''}`}
+            placeholder="Sample text loaded for demonstration. Replace with your own text for AI detection analysis...\n\nMinimum 10 characters required. The analysis will examine:\n• Perplexity patterns using GPT-2\n• Sentence structure and variation\n• N-gram repetition and similarity\n• Semantic coherence patterns\n\nPress Ctrl+Enter to analyze quickly."
+            value={text}
+            onChange={handleTextChange}
+            onKeyDown={handleKeyDown}
+            disabled={isAnalyzing}
+            rows={12}
+            maxLength={50000}
+          />
+          
+          {showPasteButton && (
+            <button
+              className="floating-paste-btn"
+              onClick={handlePaste}
+              title="Paste from clipboard"
+              type="button"
+            >
+              <ClipboardPaste size={16} />
+              Paste
+            </button>
+          )}
+        </div>
         
         <div className="input-controls">
           <div className="control-buttons">

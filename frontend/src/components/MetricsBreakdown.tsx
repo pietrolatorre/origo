@@ -4,10 +4,17 @@
 
 import React from 'react';
 import { Brain, Zap, Repeat, Link } from 'lucide-react';
-import type { GlobalScores } from '../types/analysis';
+import type { GlobalScores, EnhancedAnalysisDetails } from '../types/analysis';
 
 interface MetricsBreakdownProps {
   scores: GlobalScores;
+  enhancedAnalysis?: {
+    perplexity_details: EnhancedAnalysisDetails;
+    burstiness_details: EnhancedAnalysisDetails;
+    ngram_details: EnhancedAnalysisDetails;
+    semantic_details: EnhancedAnalysisDetails;
+  };
+  onDimensionClick?: (dimension: string, details: EnhancedAnalysisDetails) => void;
 }
 
 // Default weights for analysis components (should match backend)
@@ -18,7 +25,11 @@ const DEFAULT_WEIGHTS: Record<string, number> = {
   semantic_coherence: 0.2
 };
 
-export const MetricsBreakdown: React.FC<MetricsBreakdownProps> = ({ scores }) => {
+export const MetricsBreakdown: React.FC<MetricsBreakdownProps> = ({ 
+  scores, 
+  enhancedAnalysis, 
+  onDimensionClick 
+}) => {
   const getMetricIcon = (metric: string) => {
     switch (metric) {
       case 'perplexity':
@@ -60,6 +71,22 @@ export const MetricsBreakdown: React.FC<MetricsBreakdownProps> = ({ scores }) =>
     return 'low';
   };
 
+  const handleDimensionClick = (metric: string) => {
+    if (onDimensionClick && enhancedAnalysis) {
+      const detailsMap: Record<string, EnhancedAnalysisDetails> = {
+        perplexity: enhancedAnalysis.perplexity_details,
+        burstiness: enhancedAnalysis.burstiness_details,
+        ngram_similarity: enhancedAnalysis.ngram_details,
+        semantic_coherence: enhancedAnalysis.semantic_details
+      };
+      
+      const details = detailsMap[metric];
+      if (details) {
+        onDimensionClick(metric, details);
+      }
+    }
+  };
+
   return (
     <div className="metrics-breakdown">
       <div className="metrics-grid">
@@ -67,7 +94,12 @@ export const MetricsBreakdown: React.FC<MetricsBreakdownProps> = ({ scores }) =>
           const weight = DEFAULT_WEIGHTS[metric] || 0.25;
           const scoreColor = getScoreColor(score);
           return (
-            <div key={metric} className="metric-dimension">
+            <div 
+              key={metric} 
+              className={`metric-dimension ${onDimensionClick ? 'clickable' : ''}`}
+              onClick={() => handleDimensionClick(metric)}
+              title={onDimensionClick ? 'Click to view detailed insights' : undefined}
+            >
               <div className="metric-header-centered">
                 <div className="metric-icon-centered">
                   {getMetricIcon(metric)}

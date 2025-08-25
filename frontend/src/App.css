@@ -882,3 +882,252 @@ body {
   from { transform: rotate(0deg); }
   to { transform: rotate(360deg); }
 }
+
+/* Clickable dimensions styles */
+.metric-dimension.clickable {
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: 2px solid transparent;
+}
+
+.metric-dimension.clickable:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.15);
+  border-color: #1a202c;
+}
+
+/* N-gram Analysis Modal */
+.ngram-analysis-modal {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 1000;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.ngram-modal-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(4px);
+}
+
+.ngram-modal-content {
+  position: relative;
+  background: white;
+  border-radius: 12px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+  max-width: 800px;
+  width: 100%;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+.ngram-modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1.5rem 2rem;
+  border-bottom: 1px solid #e2e8f0;
+  background: #f8fafc;
+  border-radius: 12px 12px 0 0;
+}
+
+.ngram-modal-header h3 {
+  margin: 0;
+  color: #1a202c;
+  font-size: 1.25rem;
+}
+
+.close-button {
+  background: none;
+  border: none;
+  font-size: 1.5rem;
+  color: #64748b;
+  cursor: pointer;
+  padding: 0.25rem;
+  line-height: 1;
+  width: 2rem;
+  height: 2rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 4px;
+  transition: all 0.2s;
+}
+
+.close-button:hover {
+  background: #e2e8f0;
+  color: #1a202c;
+}
+
+/* N-gram Tabs */
+.ngram-tabs {
+  padding: 2rem;
+}
+
+.ngram-tab-buttons {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1.5rem;
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.ngram-tab-buttons .tab-button {
+  padding: 0.75rem 1rem;
+  border: none;
+  background: none;
+  color: #64748b;
+  cursor: pointer;
+  border-radius: 6px 6px 0 0;
+  font-size: 0.875rem;
+  font-weight: 500;
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  transition: all 0.2s;
+}
+
+.ngram-tab-buttons .tab-button:hover {
+  background: #f1f5f9;
+  color: #1a202c;
+}
+
+.ngram-tab-buttons .tab-button.active {
+  background: #1a202c;
+  color: white;
+}
+
+.score-badge {
+  font-size: 0.75rem;
+  padding: 0.25rem 0.5rem;
+  border-radius: 12px;
+  font-weight: 600;
+}
+
+.score-badge.low {
+  background: #dcfce7;
+  color: #166534;
+}
+
+.score-badge.medium {
+  background: #fef3c7;
+  color: #92400e;
+}
+
+.score-badge.high {
+  background: #fecaca;
+  color: #991b1b;
+}
+
+/* N-gram Tab Content */
+.ngram-tab-content {
+  min-height: 300px;
+}
+
+.ngram-tab-panel h4 {
+  margin: 0 0 0.5rem 0;
+  color: #1a202c;
+  font-size: 1.125rem;
+}
+
+.ngram-description {
+  color: #64748b;
+  font-size: 0.875rem;
+  margin-bottom: 1.5rem;
+  line-height: 1.5;
+}
+
+/* N-gram Table */
+.ngram-table {
+  width: 100%;
+}
+
+.ngram-table table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 1rem;
+}
+
+.ngram-table th {
+  background: #f8fafc;
+  padding: 0.75rem;
+  text-align: left;
+  font-weight: 600;
+  color: #374151;
+  border-bottom: 2px solid #e5e7eb;
+  font-size: 0.875rem;
+}
+
+.ngram-table td {
+  padding: 0.75rem;
+  border-bottom: 1px solid #e5e7eb;
+  vertical-align: middle;
+}
+
+.ngram-table tbody tr:hover {
+  background: #f9fafb;
+}
+
+.ngram-text {
+  font-family: 'Courier New', monospace;
+  background: #f1f5f9;
+  padding: 0.25rem 0.5rem;
+  border-radius: 4px;
+  font-size: 0.875rem;
+  color: #1e293b;
+}
+
+.ngram-frequency {
+  font-weight: 600;
+  color: #64748b;
+  text-align: center;
+}
+
+/* Mobile responsiveness for N-gram modal */
+@media (max-width: 768px) {
+  .ngram-analysis-modal {
+    padding: 1rem;
+  }
+  
+  .ngram-modal-content {
+    max-height: 90vh;
+  }
+  
+  .ngram-modal-header {
+    padding: 1rem 1.5rem;
+  }
+  
+  .ngram-tabs {
+    padding: 1.5rem;
+  }
+  
+  .ngram-tab-buttons {
+    flex-wrap: wrap;
+  }
+  
+  .ngram-tab-buttons .tab-button {
+    flex: 1;
+    min-width: 80px;
+    padding: 0.5rem 0.75rem;
+    font-size: 0.75rem;
+  }
+  
+  .ngram-table {
+    font-size: 0.875rem;
+  }
+  
+  .ngram-table th,
+  .ngram-table td {
+    padding: 0.5rem 0.25rem;
+  }
+}

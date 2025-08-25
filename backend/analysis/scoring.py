@@ -8,6 +8,7 @@ import logging
 import json
 import os
 from typing import Dict, List, Any
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from .perplexity import perplexity_analyzer
 from .burstiness import burstiness_analyzer
 from .ngram import ngram_analyzer
@@ -57,7 +58,7 @@ class ScoreFusion:
     
     def analyze_text_comprehensive(self, text: str) -> Dict[str, Any]:
         """
-        Perform comprehensive analysis using all available methods
+        Perform comprehensive analysis using all available methods with parallel processing
         Args:
             text: Input text to analyze
         Returns:
@@ -66,40 +67,18 @@ class ScoreFusion:
         if not text or len(text.strip()) < 10:
             return self._create_empty_result()
         
-        logger.info("Starting comprehensive text analysis...")
+        logger.info("Starting comprehensive text analysis with parallel processing...")
         
         try:
-            # Perform individual analyses using enhanced methods
-            logger.info("Calculating enhanced perplexity analysis...")
-            perplexity_result = self._safe_analysis(
-                lambda: perplexity_analyzer.analyze_text(text),
-                "perplexity"
-            )
+            # Run analysis modules in parallel for better performance
+            analysis_results = self._run_parallel_analysis(text)
             
-            logger.info("Analyzing enhanced burstiness...")
-            burstiness_result = self._safe_analysis(
-                lambda: burstiness_analyzer.analyze_text(text),
-                "burstiness"
-            )
-            
-            logger.info("Analyzing n-gram patterns...")
-            ngram_result = self._safe_analysis(
-                lambda: ngram_analyzer.analyze_text(text),
-                "ngram"
-            )
-            
-            logger.info("Analyzing semantic patterns...")
-            semantic_result = self._safe_analysis(
-                lambda: semantic_analyzer.analyze_text(text),
-                "semantic"
-            )
-            
-            # Extract scores from results (handle both new enhanced format and legacy format)
+            # Extract scores from results
             scores = {
-                'perplexity': self._extract_score(perplexity_result, 'perplexity'),
-                'burstiness': self._extract_score(burstiness_result, 'burstiness'),
-                'ngram_similarity': self._extract_score(ngram_result, 'ngram'),
-                'semantic_coherence': self._extract_score(semantic_result, 'semantic')
+                'perplexity': self._extract_score(analysis_results.get('perplexity', {}), 'perplexity'),
+                'burstiness': self._extract_score(analysis_results.get('burstiness', {}), 'burstiness'),
+                'ngram_similarity': self._extract_score(analysis_results.get('ngram', {}), 'ngram'),
+                'semantic_coherence': self._extract_score(analysis_results.get('semantic', {}), 'semantic')
             }
             
             # Calculate weighted overall score
@@ -120,10 +99,10 @@ class ScoreFusion:
                     'ngram_similarity': round(scores['ngram_similarity'], 3)
                 },
                 'enhanced_analysis': {
-                    'perplexity_details': perplexity_result if isinstance(perplexity_result, dict) else {'overall_score': perplexity_result},
-                    'burstiness_details': burstiness_result if isinstance(burstiness_result, dict) else {'overall_score': burstiness_result},
-                    'ngram_details': ngram_result if isinstance(ngram_result, dict) else {'overall_score': ngram_result},
-                    'semantic_details': semantic_result if isinstance(semantic_result, dict) else {'overall_score': semantic_result}
+                    'perplexity_details': analysis_results.get('perplexity', {'overall_score': scores['perplexity']}),
+                    'burstiness_details': analysis_results.get('burstiness', {'overall_score': scores['burstiness']}),
+                    'ngram_details': analysis_results.get('ngram', {'overall_score': scores['ngram_similarity']}),
+                    'semantic_details': analysis_results.get('semantic', {'overall_score': scores['semantic_coherence']})
                 },
                 'paragraphs': paragraphs_analysis,
                 'word_analysis': word_analysis,
@@ -133,6 +112,7 @@ class ScoreFusion:
                     'sentence_count': len(sentence_splitter.split_into_sentences(text)),
                     'paragraph_count': len(sentence_splitter.split_into_paragraphs(text)),
                     'weights_used': self.weights.copy(),
+                    'parallel_processing_enabled': True,
                     'enhanced_features_enabled': {
                         'stylistic_analysis': self.weights_config.get('feature_flags', {}).get('enable_stylistic_analysis', True),
                         'register_analysis': self.weights_config.get('feature_flags', {}).get('enable_register_analysis', True),
@@ -148,7 +128,41 @@ class ScoreFusion:
             logger.error(f"Error in comprehensive analysis: {e}")
             return self._create_error_result(str(e))
     
-    def _safe_analysis(self, analysis_func, analysis_name: str):
+    def _run_parallel_analysis(self, text: str) -> Dict[str, Any]:
+        """
+        Run all analysis modules in parallel for improved performance
+        Args:
+            text: Text to analyze
+        Returns:
+            Dictionary with results from all analyzers
+        """
+        results = {}
+        
+        # Define analysis tasks
+        analysis_tasks = {
+            'perplexity': lambda: perplexity_analyzer.analyze_text(text),
+            'burstiness': lambda: burstiness_analyzer.analyze_text(text),
+            'ngram': lambda: ngram_analyzer.analyze_text_with_patterns(text),
+            'semantic': lambda: semantic_analyzer.analyze_text(text)
+        }
+        
+        # Execute tasks in parallel
+        with ThreadPoolExecutor(max_workers=4) as executor:
+            # Submit all tasks
+            future_to_name = {executor.submit(task, ): name for name, task in analysis_tasks.items()}
+            
+            # Collect results as they complete
+            for future in as_completed(future_to_name):
+                analysis_name = future_to_name[future]
+                try:
+                    result = future.result(timeout=30)  # 30 second timeout per analyzer
+                    results[analysis_name] = result
+                    logger.info(f"Completed {analysis_name} analysis")
+                except Exception as e:
+                    logger.error(f"Error in {analysis_name} analysis: {e}")
+                    results[analysis_name] = {'overall_score': 0.5}  # Default fallback
+        
+        return results
         """
         Safely execute analysis function with error handling
         Args:

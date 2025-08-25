@@ -4,10 +4,11 @@
 
 import React, { useState } from 'react';
 import { BarChart3, FileText, List, Type, User, Bot, Download } from 'lucide-react';
-import type { AnalysisResult } from '../types/analysis';
+import type { AnalysisResult, EnhancedAnalysisDetails } from '../types/analysis';
 import WordTable from './WordTable';
 import { MetricsBreakdown } from './MetricsBreakdown';
 import { StatisticsBanner } from './StatisticsBanner';
+import { NgramAnalysisModal } from './NgramAnalysis';
 
 interface AnalysisResultsProps {
   result: AnalysisResult;
@@ -15,6 +16,7 @@ interface AnalysisResultsProps {
 
 export const AnalysisResults: React.FC<AnalysisResultsProps> = ({ result }) => {
   const [activeTab, setActiveTab] = useState<'overview' | 'paragraph' | 'sentence' | 'words'>('overview');
+  const [showNgramModal, setShowNgramModal] = useState(false);
 
   const getScoreColor = (score: number): string => {
     if (score >= 0.7) return 'high';
@@ -42,6 +44,17 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({ result }) => {
     .filter(w => isSignificantScore(w.average_score))
     .sort((a, b) => b.average_score - a.average_score)
     .slice(0, 10); // Show only top 10
+
+  const handleDimensionClick = (dimension: string, details: EnhancedAnalysisDetails) => {
+    // Handle N-gram dimension specially
+    if (dimension === 'ngram_similarity' && details.ngram_analysis) {
+      setShowNgramModal(true);
+    } else {
+      // For other dimensions, show insights in a simple alert for now
+      // This can be expanded with more detailed modals later
+      alert(`${dimension} insights: Score ${(details.overall_score * 100).toFixed(1)}% - Click export for detailed analysis.`);
+    }
+  };
 
   const generatePDFReport = async () => {
     try {
@@ -179,7 +192,11 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({ result }) => {
                   </div>
                 </div>
                 
-                <MetricsBreakdown scores={result.global_scores} />
+                <MetricsBreakdown 
+                  scores={result.global_scores} 
+                  enhancedAnalysis={result.enhanced_analysis}
+                  onDimensionClick={handleDimensionClick}
+                />
               </div>
             )}
 
@@ -259,6 +276,14 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({ result }) => {
             )}
           </div>
         </div>
+        
+        {/* N-gram Analysis Modal */}
+        {showNgramModal && result.enhanced_analysis?.ngram_details?.ngram_analysis && (
+          <NgramAnalysisModal 
+            ngramData={result.enhanced_analysis.ngram_details.ngram_analysis}
+            onClose={() => setShowNgramModal(false)}
+          />
+        )}
       </div>
     </>
   );

@@ -12,6 +12,7 @@ from fastapi.responses import StreamingResponse
 from pydantic import BaseModel, Field
 from typing import Dict, Any, Optional, List
 import uvicorn
+import numpy as np
 
 from analysis.scoring import score_fusion
 from utils.model_loader import model_loader
@@ -23,6 +24,23 @@ logging.basicConfig(
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
 )
 logger = logging.getLogger(__name__)
+
+def convert_numpy_types(obj):
+    """Recursively convert numpy types to Python native types for JSON serialization"""
+    if isinstance(obj, np.integer):
+        return int(obj)
+    elif isinstance(obj, np.floating):
+        return float(obj)
+    elif isinstance(obj, np.ndarray):
+        return obj.tolist()
+    elif isinstance(obj, dict):
+        return {key: convert_numpy_types(value) for key, value in obj.items()}
+    elif isinstance(obj, list):
+        return [convert_numpy_types(item) for item in obj]
+    elif isinstance(obj, tuple):
+        return tuple(convert_numpy_types(item) for item in obj)
+    else:
+        return obj
 
 class PDFReportRequest(BaseModel):
     """Request model for PDF report generation"""
@@ -46,6 +64,7 @@ class TextAnalysisResponse(BaseModel):
     """Response model for text analysis results"""
     overall_score: float = Field(..., description="Overall AI detection score (0-1, higher = more likely AI)")
     global_scores: Dict[str, float] = Field(..., description="Individual analysis component scores")
+    enhanced_analysis: Optional[Dict[str, Any]] = Field(default=None, description="Enhanced analysis details with component breakdowns")
     paragraphs: list = Field(..., description="Paragraph-level analysis with sentences and words")
     word_analysis: Dict[str, Any] = Field(..., description="Word-level impact analysis")
     analysis_metadata: Optional[Dict[str, Any]] = Field(default=None, description="Analysis metadata and statistics")
@@ -157,6 +176,9 @@ async def analyze_text(request: TextAnalysisRequest):
             score_fusion.analyze_text_comprehensive,
             request.text
         )
+        
+        # Convert numpy types to Python native types for serialization
+        result = convert_numpy_types(result)
         
         logger.info(f"Analysis complete. Overall score: {result.get('overall_score', 'N/A')}")
         

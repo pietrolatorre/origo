@@ -203,35 +203,120 @@ class NgramAnalyzer:
         
         return ai_score
     
+    def calculate_ngram_frequency_score(self, text: str, n: int, threshold_percent: float = 0.1) -> Tuple[float, List[Dict[str, Any]]]:
+        """
+        Calculate n-gram frequency score with thresholding
+        Args:
+            text: Text to analyze
+            n: N-gram size
+            threshold_percent: Frequency threshold as percentage (e.g., 0.1 for 10%)
+        Returns:
+            Tuple of (score, suspicious_ngrams_list)
+        """
+        ngrams = self.extract_ngrams(text, n)
+        
+        if len(ngrams) < 2:
+            return 0.0, []
+        
+        # Count n-gram frequencies
+        ngram_counts = Counter(ngrams)
+        total_ngrams = len(ngrams)
+        
+        # Calculate threshold
+        threshold = max(1, int(total_ngrams * threshold_percent))
+        
+        # Find suspicious n-grams (above threshold)
+        suspicious_ngrams = []
+        for ngram, count in ngram_counts.items():
+            if count > threshold:
+                frequency_ratio = count / total_ngrams
+                
+                # Score based on frequency (higher frequency = higher AI likelihood)
+                if frequency_ratio >= 0.3:  # Red: very frequent
+                    score = 0.8 + (frequency_ratio - 0.3) * 0.5
+                elif frequency_ratio >= 0.15:  # Yellow: moderately frequent
+                    score = 0.4 + (frequency_ratio - 0.15) * 2.67
+                else:  # Green but above threshold
+                    score = frequency_ratio * 2.67
+                
+                suspicious_ngrams.append({
+                    'text': ' '.join(ngram),
+                    'frequency': count,
+                    'score': min(1.0, score),
+                    'frequency_ratio': frequency_ratio
+                })
+        
+        # Sort by score descending
+        suspicious_ngrams.sort(key=lambda x: x['score'], reverse=True)
+        
+        # Calculate overall score for this n-gram length
+        if suspicious_ngrams:
+            # Weight by frequency and score
+            weighted_scores = [item['score'] * item['frequency_ratio'] for item in suspicious_ngrams]
+            overall_score = min(1.0, sum(weighted_scores) * 2)  # Scale appropriately
+        else:
+            overall_score = 0.0
+        
+        return overall_score, suspicious_ngrams[:10]  # Top 10 for display
+    
     def analyze_text(self, text: str) -> Dict[str, Any]:
         """
-        Comprehensive n-gram and repetition analysis
+        Enhanced comprehensive n-gram analysis with separate scoring for different lengths
         Args:
             text: Text to analyze
         Returns:
             Dictionary with analysis results
         """
-        # Calculate different n-gram metrics
-        bigram_repetition = self.calculate_ngram_repetition(text, 2)
-        trigram_repetition = self.calculate_ngram_repetition(text, 3)
+        # Calculate separate n-gram analysis for 2, 3, and 4-grams
+        bigram_score, bigram_details = self.calculate_ngram_frequency_score(text, 2, 0.1)
+        trigram_score, trigram_details = self.calculate_ngram_frequency_score(text, 3, 0.08)
+        fourgram_score, fourgram_details = self.calculate_ngram_frequency_score(text, 4, 0.05)
+        
+        # Legacy analysis for compatibility
         phrase_repetition = self.calculate_phrase_repetition(text)
         transition_predictability = self.calculate_transition_predictability(text)
         lexical_diversity_score = self.calculate_lexical_diversity(text)
         
-        # Combined score (weighted average)
+        # Weighted scoring - longer n-grams are more suspicious
+        ngram_weights = {
+            'bigram': 0.2,    # 2-grams are common, lower weight
+            'trigram': 0.4,   # 3-grams more significant
+            'fourgram': 0.6   # 4-grams most suspicious
+        }
+        
+        # Calculate weighted n-gram score
+        weighted_ngram_score = (
+            bigram_score * ngram_weights['bigram'] +
+            trigram_score * ngram_weights['trigram'] +
+            fourgram_score * ngram_weights['fourgram']
+        ) / sum(ngram_weights.values())
+        
+        # Combined overall score
         overall_score = (
-            bigram_repetition * 0.2 +
-            trigram_repetition * 0.2 +
-            phrase_repetition * 0.2 +
+            weighted_ngram_score * 0.5 +
+            phrase_repetition * 0.15 +
             transition_predictability * 0.2 +
-            lexical_diversity_score * 0.2
+            lexical_diversity_score * 0.15
         )
         
         return {
             'overall_score': overall_score,
+            'ngram_analysis': {
+                'bigrams': {
+                    'score': bigram_score,
+                    'details': bigram_details
+                },
+                'trigrams': {
+                    'score': trigram_score,
+                    'details': trigram_details
+                },
+                'fourgrams': {
+                    'score': fourgram_score,
+                    'details': fourgram_details
+                }
+            },
             'components': {
-                'bigram_repetition': bigram_repetition,
-                'trigram_repetition': trigram_repetition,
+                'weighted_ngram_score': weighted_ngram_score,
                 'phrase_repetition': phrase_repetition,
                 'transition_predictability': transition_predictability,
                 'lexical_diversity': lexical_diversity_score
@@ -241,7 +326,7 @@ class NgramAnalyzer:
     
     def analyze_sentences(self, sentences: List[str]) -> List[Dict[str, Any]]:
         """
-        Analyze n-gram patterns for individual sentences
+        Analyze n-gram patterns for individual sentences with enhanced detail
         Args:
             sentences: List of sentences
         Returns:
@@ -256,27 +341,175 @@ class NgramAnalyzer:
             sentence_analysis.append({
                 'text': sentence,
                 'score': analysis['overall_score'],
+                'ngram_breakdown': {
+                    'bigram_score': analysis['ngram_analysis']['bigrams']['score'],
+                    'trigram_score': analysis['ngram_analysis']['trigrams']['score'],
+                    'fourgram_score': analysis['ngram_analysis']['fourgrams']['score']
+                },
                 'words': []  # Individual word analysis not as relevant for n-grams
             })
         
         return sentence_analysis
-    
-    def get_repetitive_patterns(self, text: str) -> Dict[str, Any]:
+        
+    def detect_formatting_abuse(self, text: str) -> Dict[str, Any]:
         """
-        Identify specific repetitive patterns in text
+        Detect excessive use of formatting elements that may indicate AI text
         Args:
             text: Text to analyze
         Returns:
-            Dictionary with repetitive patterns found
+            Dictionary with formatting abuse scores and details
         """
-        # Find most common n-grams
-        bigrams = self.extract_ngrams(text, 2)
-        trigrams = self.extract_ngrams(text, 3)
+        import re
         
-        bigram_counts = Counter(bigrams)
-        trigram_counts = Counter(trigrams)
+        # Count various formatting elements
+        quote_patterns = re.findall(r'["''][^"'']*["'']', text)
+        bold_patterns = re.findall(r'\*\*([^*]+)\*\*|__([^_]+)__', text)
+        italic_patterns = re.findall(r'\*([^*]+)\*|_([^_]+)_', text)
+        icon_patterns = re.findall(r'[📝🔍💡📊⚡🎯🚀📈💪👍✅❌⭐🌟]', text)
         
-        # Find repeated phrases
+        # Count reader-directed questions
+        question_patterns = re.findall(r'\b(?:do you|have you|can you|would you|are you|will you|did you)\b[^.]*\?', text, re.IGNORECASE)
+        rhetorical_questions = re.findall(r'\?', text)
+        
+        # Calculate text metrics for normalization
+        word_count = len(text.split())
+        sentence_count = len(sentence_splitter.split_into_sentences(text))
+        
+        if word_count == 0:
+            return {'overall_score': 0.0, 'details': {}}
+        
+        # Score each pattern type
+        scores = {}
+        details = {}
+        
+        # Quote abuse (normalize by word count)
+        quote_ratio = len(quote_patterns) / word_count * 100
+        if quote_ratio > 15:  # More than 15% of words in quotes is suspicious
+            scores['quote_abuse'] = min(1.0, quote_ratio / 20)
+        else:
+            scores['quote_abuse'] = 0.0
+        details['quotes'] = {'count': len(quote_patterns), 'ratio': quote_ratio}
+        
+        # Bold/italic abuse
+        formatting_count = len(bold_patterns) + len(italic_patterns)
+        formatting_ratio = formatting_count / word_count * 100
+        if formatting_ratio > 10:  # More than 10% formatted is suspicious
+            scores['formatting_abuse'] = min(1.0, formatting_ratio / 15)
+        else:
+            scores['formatting_abuse'] = 0.0
+        details['formatting'] = {'count': formatting_count, 'ratio': formatting_ratio}
+        
+        # Icon abuse
+        icon_ratio = len(icon_patterns) / word_count * 100
+        if icon_ratio > 5:  # More than 5% is excessive
+            scores['icon_abuse'] = min(1.0, icon_ratio / 8)
+        else:
+            scores['icon_abuse'] = 0.0
+        details['icons'] = {'count': len(icon_patterns), 'ratio': icon_ratio}
+        
+        # Reader question abuse
+        reader_question_ratio = len(question_patterns) / sentence_count if sentence_count > 0 else 0
+        if reader_question_ratio > 0.3:  # More than 30% reader-directed questions
+            scores['reader_question_abuse'] = min(1.0, reader_question_ratio / 0.5)
+        else:
+            scores['reader_question_abuse'] = 0.0
+        details['reader_questions'] = {'count': len(question_patterns), 'ratio': reader_question_ratio}
+        
+        # Overall formatting abuse score
+        overall_score = sum(scores.values()) / len(scores) if scores else 0.0
+        
+        return {
+            'overall_score': overall_score,
+            'component_scores': scores,
+            'details': details
+        }
+    
+    def detect_paragraph_patterns(self, text: str) -> Dict[str, Any]:
+        """
+        Analyze paragraph structure including line-break detection
+        Args:
+            text: Text to analyze
+        Returns:
+            Dictionary with paragraph pattern analysis
+        """
+        import re
+        
+        # Split by different paragraph indicators
+        empty_line_paragraphs = text.split('\n\n')
+        line_break_paragraphs = text.split('\n')
+        
+        # Remove empty entries
+        empty_line_paragraphs = [p.strip() for p in empty_line_paragraphs if p.strip()]
+        line_break_paragraphs = [p.strip() for p in line_break_paragraphs if p.strip()]
+        
+        # Analyze paragraph characteristics
+        if not line_break_paragraphs:
+            return {'overall_score': 0.0, 'details': {}}
+        
+        # Calculate paragraph length statistics
+        paragraph_lengths = [len(p.split()) for p in line_break_paragraphs]
+        avg_length = sum(paragraph_lengths) / len(paragraph_lengths)
+        length_variance = np.var(paragraph_lengths) if len(paragraph_lengths) > 1 else 0
+        
+        # Detect patterns suspicious of AI
+        scores = {}
+        
+        # Very uniform paragraph lengths (AI tends to generate similar-length paragraphs)
+        if length_variance < 10 and len(paragraph_lengths) > 3:
+            scores['uniform_length'] = 0.7
+        else:
+            scores['uniform_length'] = 0.0
+        
+        # Excessive short paragraphs (single sentences)
+        short_paragraphs = sum(1 for length in paragraph_lengths if length < 15)
+        short_ratio = short_paragraphs / len(paragraph_lengths)
+        if short_ratio > 0.7:  # More than 70% short paragraphs
+            scores['excessive_short'] = short_ratio
+        else:
+            scores['excessive_short'] = 0.0
+        
+        # Pattern regularity in paragraph starts
+        paragraph_starts = [p.split()[0].lower() if p.split() else '' for p in line_break_paragraphs]
+        start_counter = Counter(paragraph_starts)
+        most_common_start_ratio = start_counter.most_common(1)[0][1] / len(paragraph_starts) if paragraph_starts else 0
+        if most_common_start_ratio > 0.5:  # More than 50% start with same word
+            scores['repetitive_starts'] = most_common_start_ratio
+        else:
+            scores['repetitive_starts'] = 0.0
+        
+        overall_score = sum(scores.values()) / len(scores) if scores else 0.0
+        
+        return {
+            'overall_score': min(1.0, overall_score),
+            'component_scores': scores,
+            'details': {
+                'paragraph_count': len(line_break_paragraphs),
+                'avg_length': avg_length,
+                'length_variance': length_variance,
+                'short_paragraph_ratio': short_ratio
+            }
+        }
+    
+    def get_repetitive_patterns(self, text: str) -> Dict[str, Any]:
+        """
+        Enhanced repetitive patterns identification with frequency scoring
+        Args:
+            text: Text to analyze
+        Returns:
+            Dictionary with repetitive patterns found with scores
+        """
+        # Get enhanced n-gram analysis
+        analysis = self.analyze_text(text)
+        ngram_analysis = analysis.get('ngram_analysis', {})
+        
+        # Extract patterns with scores
+        patterns = {
+            'bigrams': ngram_analysis.get('bigrams', {}).get('details', []),
+            'trigrams': ngram_analysis.get('trigrams', {}).get('details', []),
+            'fourgrams': ngram_analysis.get('fourgrams', {}).get('details', [])
+        }
+        
+        # Legacy phrase analysis for compatibility
         sentences = sentence_splitter.split_into_sentences(text)
         phrases = []
         
@@ -289,19 +522,49 @@ class NgramAnalyzer:
         phrase_counts = Counter(phrases)
         
         return {
-            'common_bigrams': [
-                {'pattern': ' '.join(bigram), 'count': count}
-                for bigram, count in bigram_counts.most_common(10) if count > 1
-            ],
-            'common_trigrams': [
-                {'pattern': ' '.join(trigram), 'count': count}
-                for trigram, count in trigram_counts.most_common(10) if count > 1
-            ],
+            'ngram_patterns': patterns,
             'repeated_phrases': [
                 {'pattern': phrase, 'count': count}
                 for phrase, count in phrase_counts.most_common(10) if count > 1
             ]
         }
+    
+    def analyze_text_with_patterns(self, text: str) -> Dict[str, Any]:
+        """
+        Comprehensive analysis including new suspicious patterns
+        Args:
+            text: Text to analyze
+        Returns:
+            Enhanced analysis results with pattern detection
+        """
+        # Get base n-gram analysis
+        base_analysis = self.analyze_text(text)
+        
+        # Add new pattern detection
+        formatting_analysis = self.detect_formatting_abuse(text)
+        paragraph_analysis = self.detect_paragraph_patterns(text)
+        
+        # Combine scores with appropriate weights
+        pattern_score = (
+            formatting_analysis['overall_score'] * 0.3 +
+            paragraph_analysis['overall_score'] * 0.2
+        )
+        
+        # Update overall score to include pattern analysis
+        enhanced_overall_score = (
+            base_analysis['overall_score'] * 0.7 +
+            pattern_score * 0.3
+        )
+        
+        # Merge results
+        enhanced_analysis = base_analysis.copy()
+        enhanced_analysis['overall_score'] = enhanced_overall_score
+        enhanced_analysis['pattern_analysis'] = {
+            'formatting': formatting_analysis,
+            'paragraphs': paragraph_analysis
+        }
+        
+        return enhanced_analysis
 
 # Global n-gram analyzer instance
 ngram_analyzer = NgramAnalyzer()

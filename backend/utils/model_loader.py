@@ -5,7 +5,7 @@ Loads and manages AI models efficiently with singleton pattern to avoid repeated
 
 import logging
 from typing import Dict, Any
-from transformers import GPT2LMHeadModel, GPT2Tokenizer, pipeline
+from transformers import GPT2LMHeadModel, GPT2Tokenizer, GPT2Config, pipeline
 from sentence_transformers import SentenceTransformer
 import torch
 
@@ -40,7 +40,14 @@ class ModelLoader:
         if 'gpt2' not in self._models:
             logger.info("Loading GPT-2 model for perplexity analysis...")
             try:
-                model = GPT2LMHeadModel.from_pretrained('gpt2')
+                # Load model with explicit configuration to suppress warnings
+                from transformers import GPT2Config
+                config = GPT2Config.from_pretrained('gpt2')
+                # Explicitly set loss_type to avoid warnings
+                if hasattr(config, 'loss_type'):
+                    config.loss_type = None
+                
+                model = GPT2LMHeadModel.from_pretrained('gpt2', config=config)
                 tokenizer = GPT2Tokenizer.from_pretrained('gpt2')
                 
                 # Add padding token if not present

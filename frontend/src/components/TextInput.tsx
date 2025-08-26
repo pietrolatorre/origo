@@ -3,7 +3,7 @@
  */
 
 import React, { useState, useCallback, useEffect } from 'react';
-import { Send, Trash2, Loader2, ClipboardPaste, Globe } from 'lucide-react';
+import { Send, Trash2, Loader2, ClipboardPaste, Globe, Settings, ChevronDown, ChevronUp } from 'lucide-react';
 import { AnalysisDimensions } from './AnalysisDimensions';
 import type { DimensionToggleSettings } from '../types/analysis';
 
@@ -26,8 +26,23 @@ export const TextInput: React.FC<TextInputProps> = ({
 }) => {
   const [text, setText] = useState('');
   const [showPasteButton, setShowPasteButton] = useState(false);
+  const [showDimensions, setShowDimensions] = useState(false);
+
+  // Count active dimensions
+  const activeDimensionsCount = Object.values(dimensions).filter(Boolean).length;
+  const totalDimensions = Object.keys(dimensions).length;
 
   // Sample text for demonstration
+  const toggleAllDimensions = useCallback(() => {
+    const allActive = activeDimensionsCount === totalDimensions;
+    const newValue = !allActive;
+    
+    // Toggle all dimensions to the new state
+    Object.keys(dimensions).forEach(dimensionId => {
+      onDimensionToggle(dimensionId as keyof DimensionToggleSettings, newValue);
+    });
+  }, [activeDimensionsCount, totalDimensions, dimensions, onDimensionToggle]);
+
   const sampleText = `Artificial intelligence has revolutionized numerous industries and transformed how we approach complex problems. Machine learning algorithms can now process vast amounts of data with unprecedented accuracy and speed. These systems demonstrate remarkable capabilities in pattern recognition, natural language processing, and predictive analytics. The integration of AI technologies continues to expand across various sectors, including healthcare, finance, and transportation. As these systems become more sophisticated, they enable innovative solutions that were previously unimaginable. The potential applications seem limitless, offering exciting possibilities for the future.`;
 
   // Initialize with sample text if no text is provided
@@ -127,10 +142,38 @@ export const TextInput: React.FC<TextInputProps> = ({
           )}
         </div>
         
-        <AnalysisDimensions 
-          dimensions={dimensions}
-          onDimensionToggle={onDimensionToggle}
-        />
+        {/* Collapsible Dimensions Configuration */}
+        <div className="dimensions-config-section">
+          <button 
+            className="dimensions-toggle-btn"
+            onClick={() => setShowDimensions(!showDimensions)}
+            title={showDimensions ? 'Hide dimension settings' : 'Show dimension settings'}
+          >
+            <Settings size={16} />
+            <span className="dimensions-status">
+              {activeDimensionsCount}/{totalDimensions} dimensions
+            </span>
+            {showDimensions ? <ChevronUp size={16} /> : <ChevronDown size={16} />}
+          </button>
+          
+          {showDimensions && (
+            <div className="dimensions-config-panel">
+              <div className="dimensions-controls">
+                <button 
+                  className="btn btn-secondary toggle-all-btn"
+                  onClick={toggleAllDimensions}
+                  title={activeDimensionsCount === totalDimensions ? 'Deselect all dimensions' : 'Select all dimensions'}
+                >
+                  {activeDimensionsCount === totalDimensions ? 'Deselect All' : 'Select All'}
+                </button>
+              </div>
+              <AnalysisDimensions 
+                dimensions={dimensions}
+                onDimensionToggle={onDimensionToggle}
+              />
+            </div>
+          )}
+        </div>
         
         <div className="input-controls">
           <div className="control-buttons">

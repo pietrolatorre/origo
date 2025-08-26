@@ -1,0 +1,236 @@
+# Origo Project - Git Ignore File
+# Excludes all generated files from local execution
+
+# === FRONTEND GENERATED FILES ===
+# Node.js dependencies
+frontend/node_modules/
+frontend/package-lock.json
+
+# Build outputs
+frontend/dist/
+frontend/build/
+
+# Development files
+frontend/.env.local
+frontend/.env.development.local
+frontend/.env.test.local
+frontend/.env.production.local
+
+# IDE and editor files
+frontend/.vscode/
+frontend/.idea/
+
+# OS generated files
+frontend/.DS_Store
+frontend/Thumbs.db
+
+# Logs
+frontend/npm-debug.log*
+frontend/yarn-debug.log*
+frontend/yarn-error.log*
+frontend/lerna-debug.log*
+
+# Runtime data
+frontend/pids
+frontend/*.pid
+frontend/*.seed
+frontend/*.pid.lock
+
+# Coverage directory used by tools like istanbul
+frontend/coverage/
+frontend/.nyc_output
+
+# ESLint cache
+frontend/.eslintcache
+
+# === BACKEND GENERATED FILES ===
+# Python virtual environments
+backend/venv/
+backend/env/
+backend/.venv/
+backend/.env/
+
+# Python cache files
+backend/__pycache__/
+backend/**/__pycache__/
+backend/*.py[cod]
+backend/*$py.class
+
+# Distribution / packaging
+backend/.Python
+backend/build/
+backend/develop-eggs/
+backend/dist/
+backend/downloads/
+backend/eggs/
+backend/.eggs/
+backend/lib/
+backend/lib64/
+backend/parts/
+backend/sdist/
+backend/var/
+backend/wheels/
+backend/pip-wheel-metadata/
+backend/share/python-wheels/
+backend/*.egg-info/
+backend/.installed.cfg
+backend/*.egg
+backend/MANIFEST
+
+# PyInstaller
+backend/*.manifest
+backend/*.spec
+
+# Installer logs
+backend/pip-log.txt
+backend/pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+backend/htmlcov/
+backend/.tox/
+backend/.nox/
+backend/.coverage
+backend/.coverage.*
+backend/.cache
+backend/nosetests.xml
+backend/coverage.xml
+backend/*.cover
+backend/*.py,cover
+backend/.hypothesis/
+backend/.pytest_cache/
+
+# Jupyter Notebook
+backend/.ipynb_checkpoints
+
+# IPython
+backend/profile_default/
+backend/ipython_config.py
+
+# Environments
+backend/.env
+backend/.venv
+backend/env/
+backend/venv/
+backend/ENV/
+backend/env.bak/
+backend/venv.bak/
+
+# mypy
+backend/.mypy_cache/
+backend/.dmypy.json
+backend/dmypy.json
+
+# Pyre type checker
+backend/.pyre/
+
+# AI Model files (large downloads)
+backend/models/
+backend/cache/
+backend/downloads/
+
+# Log files
+backend/logs/
+backend/*.log
+
+# === DOCKER GENERATED FILES ===
+# Docker volumes and data
+docker-volumes/
+.docker/
+
+# === GENERAL DEVELOPMENT FILES ===
+# IDE and Editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Temporary files
+*.tmp
+*.temp
+.cache/
+
+# Environment variables
+.env
+.env.local
+.env.development.local
+.env.test.local
+.env.production.local
+
+# === PROJECT SPECIFIC ===
+# Analysis output files
+reports/
+exports/
+*.pdf
+
+# Configuration overrides
+config.local.json
+settings.local.json
+
+# Development databases
+*.db
+*.sqlite
+*.sqlite3
+
+# Backup files
+*.bak
+*.backup
+
+# Compressed files
+*.zip
+*.tar.gz
+*.rar
+
+# === SECURITY SENSITIVE ===
+# API keys and secrets
+secrets/
+*.key
+*.pem
+*.crt
+
+# User uploaded content (if any)
+uploads/
+user-content/
+
+# === PERFORMANCE AND MONITORING ===
+# Profiling data
+*.prof
+profile_output/
+
+# Memory dumps
+*.hprof
+*.dump
+
+# === DOCUMENTATION BUILD ===
+# Generated documentation
+docs/_build/
+docs/build/
+site/
+
+# === TESTING ===
+# Test outputs
+test-results/
+test-output/
+screenshots/
+videos/
+
+# Coverage reports
+coverage/
+.coverage
+
+# === MISCELLANEOUS ===
+# Logs directory
+logs/
+
+# Temporary directories
+tmp/
+temp/

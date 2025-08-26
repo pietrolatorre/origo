@@ -20,11 +20,11 @@ RUN apt-get update && apt-get install -y \
 COPY requirements.txt .
 
 # Install Python dependencies with optimizations
-# Install PyTorch CPU-only version first to avoid NVIDIA dependencies
+# NOTE: PyTorch installation commented out - not needed for current simulated calculations
+# When implementing real AI models, uncomment the line below:
+# RUN pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu \
 RUN pip install --no-cache-dir --upgrade pip \
-    && pip install torch torchvision torchaudio --index-url https://download.pytorch.org/whl/cpu \
-    && pip install --no-cache-dir -r requirements.txt \
-    && pip list | grep -E "(torch|nvidia)" || echo "No NVIDIA dependencies found"
+    && pip install --no-cache-dir -r requirements.txt
 
 # Copy application code
 COPY . .
@@ -33,8 +33,9 @@ COPY . .
 RUN useradd -m appuser && chown -R appuser:appuser /app
 USER appuser
 
-# Download required NLTK data as the appuser
-RUN python -c "import nltk; nltk.download('punkt', quiet=True); nltk.download('stopwords', quiet=True); nltk.download('punkt_tab', quiet=True)"
+# NOTE: NLTK data download removed - not needed for current simulated calculations
+# When implementing real NLP models, uncomment and ensure NLTK is in requirements.txt:
+# RUN python -c "import nltk; nltk.download('punkt', quiet=True); nltk.download('stopwords', quiet=True); nltk.download('punkt_tab', quiet=True)"
 
 # Expose port
 EXPOSE 8000

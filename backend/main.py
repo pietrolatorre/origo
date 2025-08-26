@@ -14,7 +14,7 @@ from typing import Dict, Any, Optional, List
 import uvicorn
 import numpy as np
 
-from analysis.scoring import score_fusion
+from analysis.analysis_coordinator import analysis_coordinator
 from utils.model_loader import model_loader
 from utils.pdf_generator import pdf_generator
 
@@ -54,7 +54,10 @@ class DimensionSettings(BaseModel):
     perplexity: bool = Field(default=True, description="Enable perplexity analysis")
     burstiness: bool = Field(default=True, description="Enable burstiness analysis")
     semantic_coherence: bool = Field(default=True, description="Enable semantic coherence analysis")
-    ngram_similarity: bool = Field(default=True, description="Enable n-gram similarity analysis")
+    ngram_repetition: bool = Field(default=True, description="Enable n-gram repetition analysis")
+    lexical_richness: bool = Field(default=True, description="Enable lexical richness analysis")
+    stylistic_markers: bool = Field(default=True, description="Enable stylistic markers analysis")
+    readability: bool = Field(default=True, description="Enable readability analysis")
 
 class TextAnalysisRequest(BaseModel):
     """Request model for text analysis"""
@@ -69,19 +72,100 @@ class TextAnalysisRequest(BaseModel):
                     "perplexity": True,
                     "burstiness": True,
                     "semantic_coherence": True,
-                    "ngram_similarity": True
+                    "ngram_repetition": True,
+                    "lexical_richness": True,
+                    "stylistic_markers": True,
+                    "readability": True
                 }
             }
         }
 
+# Evidence types for dimension analysis
+class Evidence(BaseModel):
+    """Base evidence model for analysis results"""
+    text: str = Field(..., description="Text segment providing evidence")
+    score: float = Field(..., description="Evidence score (0-1)")
+    startIndex: int = Field(..., description="Start position in original text")
+    endIndex: int = Field(..., description="End position in original text")
+    type: str = Field(..., description="Evidence type: sentence, paragraph, ngram")
+    reason: Optional[str] = Field(default=None, description="Explanation of why this is evidence")
+
+class DimensionAnalysisResult(BaseModel):
+    """Analysis result for a single dimension"""
+    score: float = Field(..., description="Dimension score (0-1)")
+    weight: float = Field(..., description="Weight used in global score calculation")
+    active: bool = Field(..., description="Whether this dimension was active")
+    totalEvidences: int = Field(..., description="Total number of evidence items")
+    topEvidences: List[Evidence] = Field(..., description="Top evidence items (limited to 10)")
+
+class GlobalScores(BaseModel):
+    """Global scores for all dimensions"""
+    perplexity: Optional[float] = Field(default=None, description="Perplexity analysis score")
+    burstiness: Optional[float] = Field(default=None, description="Burstiness analysis score")
+    semantic_coherence: Optional[float] = Field(default=None, description="Semantic coherence analysis score")
+    ngram_repetition: Optional[float] = Field(default=None, description="N-gram repetition analysis score")
+    lexical_richness: Optional[float] = Field(default=None, description="Lexical richness analysis score")
+    stylistic_markers: Optional[float] = Field(default=None, description="Stylistic markers analysis score")
+    readability: Optional[float] = Field(default=None, description="Readability analysis score")
+
+class DimensionResults(BaseModel):
+    """Complete dimension results"""
+    perplexity: Optional[DimensionAnalysisResult] = Field(default=None)
+    burstiness: Optional[DimensionAnalysisResult] = Field(default=None)
+    semantic_coherence: Optional[DimensionAnalysisResult] = Field(default=None)
+    ngram_repetition: Optional[DimensionAnalysisResult] = Field(default=None)
+    lexical_richness: Optional[DimensionAnalysisResult] = Field(default=None)
+    stylistic_markers: Optional[DimensionAnalysisResult] = Field(default=None)
+    readability: Optional[DimensionAnalysisResult] = Field(default=None)
+
+class AnalysisMetadata(BaseModel):
+    """Analysis metadata and statistics"""
+    text_length: int = Field(..., description="Length of analyzed text")
+    word_count: int = Field(..., description="Number of words")
+    sentence_count: int = Field(..., description="Number of sentences")
+    paragraph_count: int = Field(..., description="Number of paragraphs")
+    processing_time_seconds: float = Field(..., description="Processing time")
+    weights_used: Optional[Dict[str, float]] = Field(default=None, description="Weights used in calculation")
+    parallel_processing_enabled: bool = Field(default=False, description="Whether parallel processing was enabled")
+    caching_enabled: bool = Field(default=False, description="Whether caching was enabled")
+
+class WordAnalysisResult(BaseModel):
+    """Word analysis result structure"""
+    unique_words: List[Dict[str, Any]] = Field(default_factory=list, description="List of unique words analysis")
+
+class ParagraphAnalysis(BaseModel):
+    """Paragraph analysis structure"""
+    text: str = Field(..., description="Paragraph text")
+    score: float = Field(..., description="Paragraph AI score")
+    sentences: List[Dict[str, Any]] = Field(default_factory=list, description="Sentence analysis")
+
 class TextAnalysisResponse(BaseModel):
-    """Response model for text analysis results"""
+    """Comprehensive response model for text analysis results.
+    
+    This response format is designed to match the frontend TypeScript interface exactly,
+    enabling seamless integration and ensuring all required data is properly structured.
+    
+    Response Structure:
+    - overall_score: Weighted global AI detection score (0.0-1.0)
+    - global_scores: Individual dimension scores (null for disabled dimensions)
+    - dimension_results: Detailed results with evidences for each dimension
+    - weights_applied: Actual weights used in score calculation
+    - active_dimensions: List of enabled dimension identifiers
+    - analysis_metadata: Processing statistics and metadata
+    - paragraphs: Paragraph-level analysis data (empty in current implementation)
+    - word_analysis: Word-level analysis data (empty in current implementation)
+    
+    The format supports future extensions for paragraph and word-level analysis
+    while maintaining compatibility with the current 7-dimension framework.
+    """
     overall_score: float = Field(..., description="Overall AI detection score (0-1, higher = more likely AI)")
-    global_scores: Dict[str, Optional[float]] = Field(..., description="Individual analysis component scores (null for disabled dimensions)")
-    enhanced_analysis: Optional[Dict[str, Any]] = Field(default=None, description="Enhanced analysis details with component breakdowns")
-    paragraphs: list = Field(..., description="Paragraph-level analysis with sentences and words")
-    word_analysis: Dict[str, Any] = Field(..., description="Word-level impact analysis")
-    analysis_metadata: Optional[Dict[str, Any]] = Field(default=None, description="Analysis metadata and statistics")
+    global_scores: GlobalScores = Field(..., description="Individual dimension scores")
+    dimension_results: DimensionResults = Field(..., description="Detailed dimension analysis with evidences")
+    weights_applied: Dict[str, float] = Field(..., description="Weights used in global score calculation")
+    active_dimensions: List[str] = Field(..., description="List of active dimension identifiers")
+    analysis_metadata: AnalysisMetadata = Field(..., description="Analysis metadata and statistics")
+    paragraphs: List[ParagraphAnalysis] = Field(default_factory=list, description="Paragraph-level analysis (future extension)")
+    word_analysis: WordAnalysisResult = Field(default_factory=WordAnalysisResult, description="Word-level analysis (future extension)")
 
 @asynccontextmanager
 async def lifespan(app: FastAPI):
@@ -101,14 +185,85 @@ async def lifespan(app: FastAPI):
     
     logger.info("Shutting down Origo application...")
 
-# Create FastAPI application
+# Create FastAPI application with comprehensive documentation
 app = FastAPI(
-    title="Origo - AI Text Detection API",
-    description="Breaking down the signals of writing origin. Analyzes text to detect AI-generated content using multiple heuristics.",
-    version="1.0.0",
+    title="Origo - Advanced AI Text Detection API",
+    description="""
+    ## Breaking down the signals of writing origin
+    
+    Origo provides advanced AI text detection through a comprehensive **7-dimension analysis framework**.
+    Each dimension produces normalized scores (0-1) with detailed evidence and explanations.
+    
+    ### 🎯 Core Features
+    
+    - **Multi-dimensional Analysis**: 7 specialized detection methods
+    - **Weighted Scoring**: Configurable dimension weights with automatic rebalancing
+    - **Evidence-based Results**: Top 10 evidences per dimension with detailed reasoning
+    - **Real-time Processing**: Fast analysis with < 5 second response times
+    - **Scalable Architecture**: Designed for high-throughput processing
+    
+    ### 📊 Analysis Dimensions
+    
+    1. **Perplexity** (Sentence): Language model predictability patterns
+    2. **Burstiness** (Paragraph): Sentence length variation analysis
+    3. **Semantic Coherence** (Paragraph): Topical flow consistency
+    4. **N-gram Repetition** (Global): Word sequence repetition detection
+    5. **Lexical Richness** (Sentence): Vocabulary diversity measures
+    6. **Stylistic Markers** (Sentence): Writing style pattern analysis
+    7. **Readability** (Sentence): Text complexity and naturalness
+    
+    ### 🔧 Configuration
+    
+    - **Dimension Toggles**: Enable/disable individual analysis dimensions
+    - **Weight Adjustment**: Customize dimension importance (experimental)
+    - **Evidence Limiting**: Top 10 shown in API, full results available for export
+    
+    ### 📈 Score Interpretation
+    
+    - **0.0-0.3**: Likely human-written (natural patterns)
+    - **0.3-0.7**: Uncertain/mixed signals (requires human judgment)
+    - **0.7-1.0**: Likely AI-generated (artificial patterns detected)
+    
+    ### ⚠️ Important Disclaimers
+    
+    AI-generated text detection is **probabilistic, not conclusive**. This tool provides 
+    statistical signals to support human judgment, not replace it. Results should be 
+    interpreted as confidence indicators rather than definitive classifications.
+    
+    ### 🚀 Getting Started
+    
+    1. **POST /analyze**: Submit text for comprehensive analysis
+    2. **GET /health**: Check API status and model availability
+    3. **POST /export-pdf**: Generate detailed analysis reports
+    4. **GET /weights**: View current dimension weights
+    
+    ### 🔗 Integration
+    
+    This API is designed to integrate seamlessly with the Origo frontend interface,
+    providing structured JSON responses that match TypeScript interfaces exactly.
+    """,
+    version="2.0.0",
     docs_url="/docs",
     redoc_url="/redoc",
-    lifespan=lifespan
+    lifespan=lifespan,
+    tags_metadata=[
+        {
+            "name": "Analysis",
+            "description": "Core text analysis endpoints for AI detection"
+        },
+        {
+            "name": "Export",
+            "description": "Report generation and data export functionality"
+        },
+        {
+            "name": "Configuration",
+            "description": "Weight management and system configuration"
+        },
+        {
+            "name": "Health",
+            "description": "System health and status monitoring"
+        }
+    ]
 )
 
 # Configure CORS for frontend communication
@@ -120,24 +275,72 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get("/")
+@app.get("/", tags=["Health"])
 async def root():
-    """Root endpoint with API information"""
+    """API Welcome Endpoint
+    
+    Provides basic information about the Origo API, available endpoints,
+    and important usage disclaimers.
+    
+    Returns:
+        dict: API information including version, endpoints, and disclaimer
+    """
     return {
-        "message": "Welcome to Origo - AI Text Detection API",
-        "description": "Breaking down the signals of writing origin",
-        "version": "1.0.0",
-        "endpoints": {
-            "analyze": "/analyze - POST: Analyze text for AI detection",
-            "health": "/health - GET: Health check",
-            "docs": "/docs - Interactive API documentation"
+        "message": "Welcome to Origo - Advanced AI Text Detection API",
+        "description": "Breaking down the signals of writing origin through 7-dimension analysis",
+        "version": "2.0.0",
+        "framework": "7-Dimension AI Detection Framework",
+        "capabilities": {
+            "dimensions": 7,
+            "max_text_length": 50000,
+            "response_time": "< 5 seconds",
+            "evidence_per_dimension": 10,
+            "score_range": "0.0-1.0",
+            "configurable_weights": True
         },
-        "disclaimer": "AI-generated text detection is imperfect. This tool provides probabilistic signals — not conclusive proof. It is meant to support human judgment, not replace it."
+        "endpoints": {
+            "analyze": "POST /analyze - Comprehensive text analysis with 7 dimensions",
+            "export": "POST /export-pdf - Generate detailed analysis reports",
+            "health": "GET /health - System health and model status",
+            "weights": "GET/POST /weights - View/update dimension weights",
+            "api_info": "GET /api-info - Comprehensive framework documentation",
+            "docs": "GET /docs - Interactive API documentation"
+        },
+        "dimensions": [
+            "Perplexity (Language Model Patterns)",
+            "Burstiness (Sentence Variation)",
+            "Semantic Coherence (Topical Flow)", 
+            "N-gram Repetition (Word Sequences)",
+            "Lexical Richness (Vocabulary Diversity)",
+            "Stylistic Markers (Writing Patterns)",
+            "Readability (Text Complexity)"
+        ],
+        "score_interpretation": {
+            "0.0-0.3": "Likely human-written",
+            "0.3-0.7": "Uncertain/mixed signals",
+            "0.7-1.0": "Likely AI-generated"
+        },
+        "disclaimer": "AI-generated text detection is probabilistic, not conclusive. This tool provides statistical signals to support human judgment, not replace it. Results should be interpreted as confidence indicators rather than definitive classifications."
     }
 
-@app.get("/health")
+@app.get("/health", tags=["Health"])
 async def health_check():
-    """Health check endpoint"""
+    """System Health Check Endpoint
+    
+    Provides detailed information about the API system status,
+    including model availability and system configuration.
+    
+    Returns:
+        dict: Health status information including:
+            - status: "healthy" or "unhealthy"
+            - device: Processing device (CPU/GPU)
+            - models_loaded: Whether AI models are loaded
+            - timestamp: Current system time
+    
+    Status Codes:
+        200: System is healthy and operational
+        500: System has issues (check error field)
+    """
     try:
         # Quick model availability check
         device = model_loader.get_device()
@@ -155,78 +358,154 @@ async def health_check():
             "timestamp": "2024-01-01T00:00:00Z"
         }
 
-@app.post("/analyze", response_model=TextAnalysisResponse)
+@app.post("/analyze", response_model=TextAnalysisResponse, tags=["Analysis"])
 async def analyze_text(request: TextAnalysisRequest):
     """
-    Analyze text for AI-generated content detection
+    Analyze text for AI-generated content detection using 7-dimension framework
     
-    This endpoint performs comprehensive analysis using multiple heuristics:
-    - Perplexity analysis using GPT-2
-    - Burstiness analysis (sentence variation patterns)
-    - N-gram similarity and repetition detection
-    - Semantic coherence using Sentence-BERT
+    This endpoint performs comprehensive analysis using the following dimensions:
     
-    Returns detailed scores and breakdowns at paragraph, sentence, and word levels.
+    **Analysis Dimensions:**
+    1. **Perplexity**: Language model predictability patterns
+    2. **Burstiness**: Sentence length variation within paragraphs
+    3. **Semantic Coherence**: Topical flow and logical consistency
+    4. **N-gram Repetition**: Word sequence repetition patterns
+    5. **Lexical Richness**: Vocabulary diversity measures
+    6. **Stylistic Markers**: Writing style consistency analysis
+    7. **Readability**: Text complexity and naturalness
+    
+    **Response Format:**
+    - overall_score: Weighted global AI detection score (0.0-1.0)
+    - global_scores: Individual dimension scores (null for disabled)
+    - dimension_results: Detailed analysis with top 10 evidences per dimension
+    - weights_applied: Actual weights used in global score calculation
+    - active_dimensions: List of enabled dimension identifiers
+    - analysis_metadata: Processing statistics and text metrics
+    
+    **Score Interpretation:**
+    - 0.0-0.3: Likely human-written
+    - 0.3-0.7: Uncertain/mixed signals
+    - 0.7-1.0: Likely AI-generated
+    
+    **Error Handling:**
+    - 400: Invalid input (text too short/long, invalid dimensions)
+    - 500: Internal processing error
+    
+    Returns detailed analysis results compatible with frontend interface.
     """
     try:
-        logger.info(f"Analyzing text of length: {len(request.text)} characters")
+        logger.info(f"Starting analysis for text of length: {len(request.text)} characters")
         
         # Validate text length
-        if len(request.text.strip()) < 10:
+        text_length = len(request.text.strip())
+        if text_length < 10:
             raise HTTPException(
                 status_code=400,
-                detail="Text must be at least 10 characters long"
+                detail="Text must be at least 10 characters long for meaningful analysis"
             )
         
-        if len(request.text) > 50000:
+        if text_length > 50000:
             raise HTTPException(
                 status_code=400,
-                detail="Text must be less than 50,000 characters"
+                detail="Text must be less than 50,000 characters. Large texts may take too long to process."
             )
         
-        # Perform analysis with dimension settings
+        # Convert frontend dimension settings to backend format
         enabled_dimensions = None
         if request.enabled_dimensions:
             enabled_dimensions = {
                 'perplexity': request.enabled_dimensions.perplexity,
                 'burstiness': request.enabled_dimensions.burstiness,
                 'semantic_coherence': request.enabled_dimensions.semantic_coherence,
-                'ngram_similarity': request.enabled_dimensions.ngram_similarity
+                'ngram_repetition': request.enabled_dimensions.ngram_repetition,
+                'lexical_richness': request.enabled_dimensions.lexical_richness,
+                'stylistic_markers': request.enabled_dimensions.stylistic_markers,
+                'readability': request.enabled_dimensions.readability
             }
+            
+            # Validate at least one dimension is enabled
+            if not any(enabled_dimensions.values()):
+                raise HTTPException(
+                    status_code=400,
+                    detail="At least one analysis dimension must be enabled"
+                )
         
+        # Log dimension configuration
+        if enabled_dimensions:
+            enabled_list = [dim for dim, enabled in enabled_dimensions.items() if enabled]
+            logger.info(f"Analysis dimensions enabled: {', '.join(enabled_list)}")
+        else:
+            logger.info("All analysis dimensions enabled (default configuration)")
+        
+        # Perform analysis with proper async handling
         result = await asyncio.get_event_loop().run_in_executor(
             None, 
-            score_fusion.analyze_text_comprehensive,
-            request.text,
+            analysis_coordinator.analyze_text_comprehensive,
+            request.text.strip(),
             enabled_dimensions
         )
         
-        # Convert numpy types to Python native types for serialization
+        # Convert numpy types to Python native types for JSON serialization
         result = convert_numpy_types(result)
         
-        logger.info(f"Analysis complete. Overall score: {result.get('overall_score', 'N/A')}")
+        # Validate result structure before returning
+        if not isinstance(result, dict) or 'overall_score' not in result:
+            logger.error(f"Invalid analysis result structure: {type(result)}")
+            raise HTTPException(
+                status_code=500,
+                detail="Analysis returned invalid result structure"
+            )
+        
+        logger.info(
+            f"Analysis completed successfully. "
+            f"Overall score: {result.get('overall_score', 'N/A'):.3f}, "
+            f"Active dimensions: {len(result.get('active_dimensions', []))}, "
+            f"Processing time: {result.get('analysis_metadata', {}).get('processing_time_seconds', 'N/A')}s"
+        )
         
         return TextAnalysisResponse(**result)
         
     except HTTPException:
+        # Re-raise HTTP exceptions (validation errors)
         raise
+    except ValueError as e:
+        # Handle validation and conversion errors
+        logger.error(f"Validation error during text analysis: {e}")
+        raise HTTPException(
+            status_code=400,
+            detail=f"Invalid input data: {str(e)}"
+        )
     except Exception as e:
-        logger.error(f"Error during text analysis: {e}")
+        # Handle unexpected errors
+        logger.error(f"Unexpected error during text analysis: {e}", exc_info=True)
         raise HTTPException(
             status_code=500,
-            detail=f"Internal server error during analysis: {str(e)}"
+            detail=f"Internal server error during analysis. Please try again or contact support if the problem persists."
         )
 
-@app.post("/export-pdf")
+@app.post("/export-pdf", tags=["Export"])
 async def export_pdf_report(request: PDFReportRequest):
-    """
-    Generate and download a comprehensive PDF report
+    """Generate Comprehensive PDF Analysis Report
     
-    This endpoint generates a detailed PDF report containing:
-    - Overview with overall scores and component breakdowns
-    - Paragraph analysis with AI probability scores
-    - Sentence analysis with detailed scoring
-    - Word analysis with frequency and impact data
+    Creates a detailed PDF report containing complete analysis results,
+    including all evidences, scores, and statistical breakdowns.
+    
+    The PDF report includes:
+    - Executive summary with overall scores
+    - Detailed dimension analysis with all evidences
+    - Statistical metadata and processing information
+    - Visual charts and score interpretations
+    
+    Args:
+        request: Report request containing analysis data
+    
+    Returns:
+        StreamingResponse: PDF file for download
+    
+    Status Codes:
+        200: PDF generated successfully
+        400: Invalid report data
+        500: PDF generation error
     """
     try:
         logger.info("Generating PDF report...")
@@ -254,28 +533,148 @@ async def export_pdf_report(request: PDFReportRequest):
             detail=f"Error generating PDF report: {str(e)}"
         )
 
-@app.get("/weights")
+@app.get("/weights", tags=["Configuration"])
 async def get_analysis_weights():
-    """Get current analysis component weights"""
+    """Get Current Analysis Dimension Weights
+    
+    Returns the current weights used for combining different analysis dimensions
+    into the overall AI detection score.
+    
+    Returns:
+        dict: Current weights and description
+    """
     return {
-        "weights": score_fusion.weights,
+        "weights": analysis_coordinator.default_weights,
         "description": "Weights used for combining different analysis components"
     }
 
-@app.post("/weights")
+@app.post("/weights", tags=["Configuration"])
 async def update_analysis_weights(weights: Dict[str, float]):
-    """Update analysis component weights (for experimentation)"""
+    """Update Analysis Dimension Weights (Experimental)
+    
+    Allows updating the weights used for combining different analysis dimensions.
+    Weights must sum to 1.0 for proper normalization.
+    
+    Args:
+        weights: Dictionary of dimension weights
+    
+    Returns:
+        dict: Updated weights configuration
+    
+    Status Codes:
+        200: Weights updated successfully
+        400: Invalid weights (don't sum to 1.0)
+        500: Update error
+    """
     try:
-        score_fusion.update_weights(weights)
+        analysis_coordinator.update_weights(weights)
         return {
             "message": "Weights updated successfully",
-            "new_weights": score_fusion.weights
+            "new_weights": analysis_coordinator.default_weights
         }
     except Exception as e:
         raise HTTPException(
             status_code=400,
             detail=f"Error updating weights: {str(e)}"
         )
+
+@app.get("/api-info", tags=["Health"])
+async def get_api_info():
+    """Comprehensive API Information and Framework Documentation
+    
+    Provides detailed information about the Origo 7-dimension analysis framework,
+    including dimension descriptions, scoring methodology, and integration guidelines.
+    
+    Returns:
+        dict: Complete API and framework documentation
+    """
+    return {
+        "framework": {
+            "name": "Origo 7-Dimension AI Detection Framework",
+            "version": "2.0.0",
+            "description": "Advanced probabilistic AI text detection using multi-dimensional analysis",
+            "methodology": "Weighted aggregation of 7 specialized analysis dimensions"
+        },
+        "dimensions": {
+            "perplexity": {
+                "name": "Perplexity Analysis",
+                "level": "sentence",
+                "description": "Measures statistical likelihood using language model patterns",
+                "interpretation": "Low = natural, High = artificial",
+                "weight": 0.143
+            },
+            "burstiness": {
+                "name": "Burstiness Analysis", 
+                "level": "paragraph",
+                "description": "Analyzes variability in sentence lengths within paragraphs",
+                "interpretation": "Very low = monotonous, Very high = unnatural",
+                "weight": 0.143
+            },
+            "semantic_coherence": {
+                "name": "Semantic Coherence",
+                "level": "paragraph", 
+                "description": "Measures logical flow and topical consistency",
+                "interpretation": "High = coherent flow, Low = abrupt shifts",
+                "weight": 0.143
+            },
+            "ngram_repetition": {
+                "name": "N-gram Repetition",
+                "level": "global",
+                "description": "Detects unusual word sequence repetition patterns",
+                "interpretation": "High repetition = suspicious artificiality",
+                "weight": 0.143
+            },
+            "lexical_richness": {
+                "name": "Lexical Richness",
+                "level": "sentence",
+                "description": "Measures vocabulary variety and diversity",
+                "interpretation": "Low = repetitive, High = rich vocabulary",
+                "weight": 0.143
+            },
+            "stylistic_markers": {
+                "name": "Stylistic Markers",
+                "level": "sentence",
+                "description": "Identifies unusual stylistic and linguistic patterns",
+                "interpretation": "Deviations = possible artificial generation",
+                "weight": 0.143
+            },
+            "readability": {
+                "name": "Readability Analysis",
+                "level": "sentence",
+                "description": "Measures natural text complexity and flow",
+                "interpretation": "Very high = too simple, Very low = too complex",
+                "weight": 0.142
+            }
+        },
+        "scoring": {
+            "range": "0.0 to 1.0",
+            "aggregation": "Weighted average of active dimensions",
+            "interpretation": {
+                "0.0-0.3": "Likely human-written (natural patterns)",
+                "0.3-0.7": "Uncertain/mixed signals (requires judgment)",
+                "0.7-1.0": "Likely AI-generated (artificial patterns)"
+            },
+            "confidence": "Probabilistic, not definitive"
+        },
+        "evidence": {
+            "per_dimension": 10,
+            "types": ["sentence", "paragraph", "ngram"],
+            "includes": ["text_segment", "score", "reasoning", "position"]
+        },
+        "technical_specs": {
+            "max_text_length": 50000,
+            "min_text_length": 10,
+            "processing_time": "< 5 seconds",
+            "supported_languages": ["English"],
+            "output_format": "JSON with TypeScript compatibility"
+        },
+        "integration": {
+            "frontend_compatible": True,
+            "response_model": "TextAnalysisResponse",
+            "request_model": "TextAnalysisRequest",
+            "error_handling": "HTTP status codes with detailed messages"
+        }
+    }
 
 @app.exception_handler(Exception)
 async def global_exception_handler(request, exc):

@@ -1,5 +1,6 @@
 import { useState, useCallback } from 'react';
 import './App.css';
+import './styles/dimensions.css';
 import { TextInput } from './components/TextInput';
 import { AnalysisResults } from './components/AnalysisResults';
 import { Header } from './components/Header';
@@ -15,7 +16,10 @@ function App() {
     perplexity: true,
     burstiness: true,
     semantic_coherence: true,
-    ngram_similarity: true
+    ngram_repetition: true,
+    lexical_richness: true,
+    stylistic_markers: true,
+    readability: true
   });
 
   const handleAnalyze = useCallback(async (text: string) => {

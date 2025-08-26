@@ -28,10 +28,104 @@ export interface GlobalScores {
   perplexity: number | null;
   burstiness: number | null;
   semantic_coherence: number | null;
-  ngram_similarity: number | null;
+  ngram_repetition: number | null;
+  lexical_richness: number | null;
+  stylistic_markers: number | null;
+  readability: number | null;
 }
 
-// Enhanced N-gram analysis structures
+// Evidence types for each analysis dimension
+export interface PerplexityEvidence {
+  type: 'sentence';
+  text: string;
+  score: number;
+  reason: string;
+}
+
+export interface BurstinessEvidence {
+  type: 'paragraph';
+  text: string;
+  score: number;
+  sentenceLengths: number[];
+  coefficientOfVariation: number;
+  reason: string;
+}
+
+export interface SemanticEvidence {
+  type: 'paragraph_pair';
+  paragraph1: string;
+  paragraph2: string;
+  similarity: number;
+  reason: string;
+}
+
+export interface NgramEvidence {
+  type: 'ngram';
+  text: string;
+  frequency: number;
+  ngramType: 'bigram' | 'trigram' | 'fourgram';
+  repetitionRate: number;
+}
+
+export interface LexicalEvidence {
+  type: 'sentence';
+  text: string;
+  typeTokenRatio: number;
+  uniqueWords: number;
+  totalWords: number;
+  reason: string;
+}
+
+export interface StylisticEvidence {
+  type: 'sentence';
+  text: string;
+  score: number;
+  anomalies: {
+    punctuationFreq: number;
+    posDistribution: Record<string, number>;
+    stopwordRatio: number;
+  };
+  reason: string;
+}
+
+export interface ReadabilityEvidence {
+  type: 'sentence';
+  text: string;
+  readabilityScore: number;
+  complexity: 'too_simple' | 'too_complex' | 'normal';
+  reason: string;
+}
+
+export type Evidence = 
+  | PerplexityEvidence 
+  | BurstinessEvidence 
+  | SemanticEvidence 
+  | NgramEvidence 
+  | LexicalEvidence 
+  | StylisticEvidence 
+  | ReadabilityEvidence;
+
+// Dimension analysis results with evidences
+export interface DimensionAnalysisResult {
+  score: number;
+  weight: number;
+  active: boolean;
+  evidences: Evidence[];
+  topEvidences: Evidence[]; // Limited to top 10 for UI
+  totalEvidences: number;
+}
+
+export interface DimensionResults {
+  perplexity: DimensionAnalysisResult;
+  burstiness: DimensionAnalysisResult;
+  semantic_coherence: DimensionAnalysisResult;
+  ngram_repetition: DimensionAnalysisResult;
+  lexical_richness: DimensionAnalysisResult;
+  stylistic_markers: DimensionAnalysisResult;
+  readability: DimensionAnalysisResult;
+}
+
+
 export interface NgramItem {
   text: string;
   frequency: number;
@@ -265,6 +359,11 @@ export interface AnalysisMetadata {
 export interface AnalysisResult {
   overall_score: number;
   global_scores: GlobalScores;
+  dimension_results: DimensionResults;
+  weights_applied: Record<keyof GlobalScores, number>;
+  active_dimensions: (keyof GlobalScores)[];
+  analysis_metadata?: AnalysisMetadata;
+  // Legacy fields for backward compatibility
   enhanced_analysis?: {
     perplexity_details: EnhancedAnalysisDetails;
     burstiness_details: EnhancedAnalysisDetails;
@@ -273,7 +372,6 @@ export interface AnalysisResult {
   };
   paragraphs: ParagraphAnalysis[];
   word_analysis: WordAnalysisResult;
-  analysis_metadata?: AnalysisMetadata;
 }
 
 export interface TextAnalysisRequest {
@@ -282,7 +380,10 @@ export interface TextAnalysisRequest {
     perplexity: boolean;
     burstiness: boolean;
     semantic_coherence: boolean;
-    ngram_similarity: boolean;
+    ngram_repetition: boolean;
+    lexical_richness: boolean;
+    stylistic_markers: boolean;
+    readability: boolean;
   };
 }
 
@@ -292,13 +393,19 @@ export interface AnalysisDimension {
   description: string;
   icon: string;
   enabled: boolean;
+  weight: number;
+  atomicLevel: 'sentence' | 'paragraph' | 'global';
+  scoreInterpretation: string;
 }
 
 export interface DimensionToggleSettings {
   perplexity: boolean;
   burstiness: boolean;
   semantic_coherence: boolean;
-  ngram_similarity: boolean;
+  ngram_repetition: boolean;
+  lexical_richness: boolean;
+  stylistic_markers: boolean;
+  readability: boolean;
 }
 
 export interface HighlightInfo {

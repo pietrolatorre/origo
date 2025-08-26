@@ -1,5 +1,6 @@
 /**
  * API service for Origo backend communication
+ * All data is fetched from backend - no simulations
  */
 
 import axios from 'axios';
@@ -10,7 +11,7 @@ const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8000';
 
 const apiClient = axios.create({
   baseURL: API_BASE_URL,
-  timeout: 120000, // 2 minutes timeout for analysis
+  timeout: 30000, // 30 seconds timeout for analysis requests
   headers: {
     'Content-Type': 'application/json',
   },
@@ -18,11 +19,11 @@ const apiClient = axios.create({
 
 // Request interceptor for logging
 apiClient.interceptors.request.use(
-  (config) => {
+  (config: any) => {
     console.log(`Making ${config.method?.toUpperCase()} request to ${config.url}`);
     return config;
   },
-  (error) => {
+  (error: any) => {
     console.error('Request error:', error);
     return Promise.reject(error);
   }
@@ -30,10 +31,10 @@ apiClient.interceptors.request.use(
 
 // Response interceptor for error handling
 apiClient.interceptors.response.use(
-  (response) => {
+  (response: any) => {
     return response;
   },
-  (error) => {
+  (error: any) => {
     console.error('Response error:', error);
     
     if (error.response) {
@@ -52,9 +53,10 @@ apiClient.interceptors.response.use(
 
 /**
  * Analyze text for AI-generated content detection
+ * Fetches all data from backend - no fallback simulations
  * @param text - Text to analyze
- * @param enabledDimensions - Which analysis dimensions to include
- * @returns Promise with analysis results
+ * @param enabledDimensions - Which analysis dimensions to include (all 7 dimensions)
+ * @returns Promise with analysis results from backend
  */
 export const analyzeText = async (text: string, enabledDimensions?: DimensionToggleSettings): Promise<AnalysisResult> => {
   if (!text || text.trim().length < 10) {
@@ -65,18 +67,44 @@ export const analyzeText = async (text: string, enabledDimensions?: DimensionTog
     throw new Error('Text must be less than 50,000 characters');
   }
 
+  // Convert DimensionToggleSettings to the format expected by backend
+  const dimensionsConfig = enabledDimensions ? {
+    perplexity: enabledDimensions.perplexity,
+    burstiness: enabledDimensions.burstiness,
+    semantic_coherence: enabledDimensions.semantic_coherence,
+    ngram_repetition: enabledDimensions.ngram_repetition,
+    lexical_richness: enabledDimensions.lexical_richness,
+    stylistic_markers: enabledDimensions.stylistic_markers,
+    readability: enabledDimensions.readability
+  } : undefined;
+
   const request: TextAnalysisRequest = { 
     text: text.trim(),
-    enabled_dimensions: enabledDimensions
+    enabled_dimensions: dimensionsConfig
   };
   
-  try {
-    const response = await apiClient.post<AnalysisResult>('/analyze', request);
-    return response.data;
-  } catch (error) {
-    console.error('Analysis request failed:', error);
-    throw error;
+  // Make request to backend - no fallback simulations
+  const response = await apiClient.post<AnalysisResult>('/analyze', request);
+  
+  // Validate response structure
+  if (!response.data) {
+    throw new Error('Invalid response from server');
   }
+
+  // Validate required fields
+  if (typeof response.data.overall_score !== 'number') {
+    throw new Error('Invalid response: missing overall_score');
+  }
+
+  if (!response.data.global_scores) {
+    throw new Error('Invalid response: missing global_scores');
+  }
+
+  if (!response.data.dimension_results) {
+    throw new Error('Invalid response: missing dimension_results');
+  }
+  
+  return response.data;
 };
 
 /**
@@ -84,13 +112,8 @@ export const analyzeText = async (text: string, enabledDimensions?: DimensionTog
  * @returns Promise with health status
  */
 export const checkHealth = async (): Promise<any> => {
-  try {
-    const response = await apiClient.get('/health');
-    return response.data;
-  } catch (error) {
-    console.error('Health check failed:', error);
-    throw error;
-  }
+  const response = await apiClient.get('/health');
+  return response.data;
 };
 
 /**
@@ -98,13 +121,36 @@ export const checkHealth = async (): Promise<any> => {
  * @returns Promise with API info
  */
 export const getApiInfo = async (): Promise<any> => {
-  try {
-    const response = await apiClient.get('/');
-    return response.data;
-  } catch (error) {
-    console.error('API info request failed:', error);
-    throw error;
-  }
+  const response = await apiClient.get('/');
+  return response.data;
+};
+
+/**
+ * Get current analysis weights configuration
+ * @returns Promise with weights configuration
+ */
+export const getAnalysisWeights = async (): Promise<any> => {
+  const response = await apiClient.get('/weights');
+  return response.data;
+};
+
+/**
+ * Update analysis weights configuration
+ * @param weights - New weights configuration
+ * @returns Promise with updated weights
+ */
+export const updateAnalysisWeights = async (weights: Record<string, number>): Promise<any> => {
+  const response = await apiClient.post('/weights', weights);
+  return response.data;
+};
+
+/**
+ * Get comprehensive API framework information
+ * @returns Promise with framework documentation
+ */
+export const getApiFrameworkInfo = async (): Promise<any> => {
+  const response = await apiClient.get('/api-info');
+  return response.data;
 };
 
 export default apiClient;

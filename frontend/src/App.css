@@ -89,7 +89,7 @@ body {
 
 /* Simplified Layout - Vertical Stack */
 .container {
-  max-width: 800px;
+  max-width: 1600px;
   margin: 0 auto;
   padding: 0 1.5rem;
   width: 100%;
@@ -99,16 +99,30 @@ body {
   gap: 2rem;
 }
 
-/* Text Input Section - Full Width */
+/* Analysis Results Container - Consistent Width */
+.analysis-results-container {
+  width: 100%;
+  max-width: 1600px;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+/* Text Input Section - Fixed Width */
 .text-input-section {
   background: white;
   border-radius: 16px;
   padding: 2.5rem;
   box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
   width: 100%;
+  max-width: 1600px;
   height: fit-content;
   border: 2px solid #e2e8f0;
   transition: all 0.3s ease;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 .input-container {
@@ -544,14 +558,19 @@ input:checked + .toggle-slider:before {
   flex-shrink: 0;
 }
 
-/* Analysis Results */
+/* Analysis Results - Exact Same Styling as Text Input Section */
 .analysis-results {
   background: white;
-  border-radius: 12px;
-  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.1);
-  overflow: hidden;
+  border-radius: 16px;
+  padding: 2.5rem;
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.15);
   width: 100%;
-  max-width: 900px;
+  max-width: 1600px;
+  height: fit-content;
+  border: 2px solid #e2e8f0;
+  transition: all 0.3s ease;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
 /* Score Visualization */
@@ -1526,7 +1545,7 @@ input:checked + .toggle-slider:before {
   background: white;
   border-radius: 12px;
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
-  max-width: 800px;
+  max-width: 1600px;
   width: 100%;
   max-height: 80vh;
   overflow-y: auto;
@@ -1760,7 +1779,7 @@ input:checked + .toggle-slider:before {
 .modal-content {
   background: white;
   border-radius: 12px;
-  max-width: 800px;
+  max-width: 1600px;
   width: 100%;
   max-height: 80vh;
   overflow-y: auto;
@@ -2126,4 +2145,56 @@ input:checked + .toggle-slider:before {
 .transition-evidence {
   color: #6b7280;
   font-style: italic;
+}
+
+/* Collapsible Dimensions Configuration */
+.dimensions-config-section {
+  margin: 16px 0;
+  border: 1px solid #e2e8f0;
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.dimensions-toggle-btn {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  background: #f8fafc;
+  border: none;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  font-size: 14px;
+  font-weight: 500;
+  color: #374151;
+}
+
+.dimensions-toggle-btn:hover {
+  background: #f1f5f9;
+}
+
+.dimensions-status {
+  flex: 1;
+  text-align: left;
+  margin-left: 8px;
+  color: #6b7280;
+}
+
+.dimensions-config-panel {
+  padding: 16px;
+  background: #ffffff;
+  border-top: 1px solid #e2e8f0;
+  animation: slideDown 0.2s ease;
+}
+
+@keyframes slideDown {
+  from {
+    opacity: 0;
+    max-height: 0;
+  }
+  to {
+    opacity: 1;
+    max-height: 500px;
+  }
 }

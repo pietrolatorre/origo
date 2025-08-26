@@ -146,12 +146,12 @@ const WordTable: React.FC<WordTableProps> = ({ words, hideControls = false }) =>
                 <span>Word</span>
                 {!hideControls && getSortIcon('word')}
               </th>
-              <th className={hideControls ? '' : `sortable ${sortKey === 'score' ? 'active' : ''}`}
+              <th className={hideControls ? 'centered-header' : `sortable centered-header ${sortKey === 'score' ? 'active' : ''}`}
                   onClick={hideControls ? undefined : () => handleSort('score')}>
                 <span>Score</span>
                 {!hideControls && getSortIcon('score')}
               </th>
-              <th className={hideControls ? '' : `sortable ${sortKey === 'count' ? 'active' : ''}`}
+              <th className={hideControls ? 'centered-header' : `sortable centered-header ${sortKey === 'count' ? 'active' : ''}`}
                   onClick={hideControls ? undefined : () => handleSort('count')}>
                 <span>Frequency</span>
                 {!hideControls && getSortIcon('count')}
@@ -176,7 +176,7 @@ const WordTable: React.FC<WordTableProps> = ({ words, hideControls = false }) =>
                     <td className="word-cell">
                       <span className="word-text">{word.word}</span>
                     </td>
-                    <td className="score-cell">
+                    <td className="score-cell centered-cell">
                       {hideControls ? (
                         <div className={`score-circle ${scoreColor}`}>
                           <span className={`score-percentage ${scoreColor}`}>{Math.round(word.average_score * 100)}%</span>
@@ -189,7 +189,7 @@ const WordTable: React.FC<WordTableProps> = ({ words, hideControls = false }) =>
                         />
                       )}
                     </td>
-                    <td className="count-cell">
+                    <td className="count-cell centered-cell">
                       <span className="count-badge">{word.count}</span>
                     </td>
                     {!hideControls && (

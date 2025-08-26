@@ -81,7 +81,7 @@ function App() {
           <div className="loading-content">
             <div className="loading-spinner"></div>
             <div className="loading-text">Analyzing text...</div>
-            <p className="loading-subtext">Please wait while we process your analysis</p>
+            <p className="loading-subtext">Please wait while we process your input</p>
           </div>
         </div>
       )}

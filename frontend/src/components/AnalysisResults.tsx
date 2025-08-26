@@ -233,8 +233,7 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({ result, enable
             {activeTab === 'paragraph' && (
               <div className="paragraph-tab">
                 <div className="tab-section-header">
-                  <h4>Top 10 Paragraphs by AI Probability Score</h4>
-                  <span className="tab-section-subtitle">Showing paragraphs with highest scores regardless of threshold</span>
+                  <h4>Top 10 results with highest score</h4>
                 </div>
                 {topParagraphs.length === 0 ? (
                   <div className="no-significant-elements">
@@ -260,8 +259,7 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({ result, enable
             {activeTab === 'sentence' && (
               <div className="sentence-tab">
                 <div className="tab-section-header">
-                  <h4>Top 10 Sentences by AI Probability Score</h4>
-                  <span className="tab-section-subtitle">Showing sentences with highest scores regardless of threshold</span>
+                  <h4>Top 10 results with highest score</h4>
                 </div>
                 {topSentences.length === 0 ? (
                   <div className="no-significant-elements">

@@ -35,7 +35,6 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
           <div className={`score-number-massive ${scoreLevel}`}>
             {Math.round(result.overall_score * 100)}<span className="percent-sign-large">%</span>
           </div>
-          <div className="score-label-ultra-large">AI Likelihood</div>
         </div>
         
         <div className="score-bar-ultra-minimal">
@@ -48,14 +47,6 @@ export const OverviewTab: React.FC<OverviewTabProps> = ({
               className="score-indicator-point"
               style={{ left: `${result.overall_score * 100}%` }}
             />
-          </div>
-          <div className="score-percentage-below">
-            <div 
-              className={`percentage-marker ${scoreLevel}`}
-              style={{ left: `${result.overall_score * 100}%` }}
-            >
-              {Math.round(result.overall_score * 100)}%
-            </div>
           </div>
         </div>
       </div>

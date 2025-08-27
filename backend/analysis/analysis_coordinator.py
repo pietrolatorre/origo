@@ -157,28 +157,28 @@ class AnalysisCoordinator:
         weights_applied = {}
         active_dimensions = []
         
+        SCORE_THRESHOLD = 0.5
         for dim_id, analyzer in self.analyzers.items():
             is_enabled = enabled_dimensions.get(dim_id, True)
-            
             if is_enabled:
                 print(f"Analyzing {dim_id}...")
-                
                 # Run the dimension analysis
                 result = analyzer.analyze(text)
-                
-                # Store results
+                # Filtra le evidenze con score > 0.5 (significative)
+                significant_evidences = [e for e in result.evidences if getattr(e, 'score', 0) > SCORE_THRESHOLD]
+                # Prendi le top 10 tra quelle significative
+                top_significant_evidences = sorted(significant_evidences, key=lambda x: x.score, reverse=True)[:10]
                 dimension_results[dim_id] = {
                     'score': result.score,
                     'weight': result.weight,
                     'active': result.active,
-                    'totalEvidences': result.total_evidences,
-                    'topEvidences': [self._evidence_to_dict(evidence) for evidence in result.top_evidences]
+                    'totalEvidences': len(significant_evidences),
+                    'topEvidences': [self._evidence_to_dict(evidence) for evidence in top_significant_evidences],
+                    'evidences': [self._evidence_to_dict(evidence) for evidence in significant_evidences]
                 }
-                
                 global_scores[dim_id] = result.score
                 weights_applied[dim_id] = result.weight
                 active_dimensions.append(dim_id)
-                
                 print(f"  → {dim_id}: {result.score:.3f}")
             else:
                 global_scores[dim_id] = None

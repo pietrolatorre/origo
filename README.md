@@ -21,7 +21,7 @@ Origo provides **explainable AI detection** through multi-dimensional analysis:
 ### User Experience
 - **Interactive Dimension Grid**: 7×1 layout with toggles and weight visualization
 - **Dimension-Based Tabs**: Dedicated tab for each analysis dimension
-- **Color-Coded Results**: Green (natural) → Yellow (moderate) → Red (suspicious)
+- **Color-Coded Results**: Green (≤ 0.5, natural) → Yellow (0.51–0.7, moderate) → Red (≥ 0.71, suspicious)
 - **Real-Time Analysis**: Fast processing with immediate visual feedback
 
 ### Export & Documentation
@@ -177,7 +177,7 @@ The new 7-dimension API returns comprehensive analysis results:
 - **Overview Tab**: Global score, statistics, and dimension summary
 - **7 Dimension Tabs**: Individual tabs for each analysis dimension
 - **Evidence Display**: Top 10 evidences per dimension with highlighting
-- **Color Coding**: Green (0-30%), Yellow (30-60%), Red (60-100%)
+- **Color Coding**: Green (0–50%), Yellow (51–70%), Red (71–100%)
 
 ### Interaction Features
 - **Dimension Toggles**: Enable/disable analysis dimensions

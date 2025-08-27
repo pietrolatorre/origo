@@ -471,11 +471,12 @@
 }
 
 .tab-button.disabled {
-  opacity: 0.5;
-  cursor: not-allowed;
-  background: #f9fafb;
-  border-color: #e5e7eb;
-  box-shadow: none;
+  background: #9b9b9b !important;
+  color: #ffffff !important;
+  cursor: not-allowed !important;
+  border: none;
+  opacity: 1 !important;
+  box-shadow: none !important;
 }
 
 .tab-button.disabled:hover {

@@ -166,29 +166,26 @@ export const AnalysisResults: React.FC<AnalysisResultsProps> = ({
               const isEnabled = enabledDimensions[dimensionId];
               const dimensionScore = result.global_scores?.[dimensionId] || 0;
               const getScoreLevel = (score: number) => {
-                if (score <= 0.3) return 'score-low';
-                if (score <= 0.6) return 'score-medium';
+                if (score <= 0.5) return 'score-low';
+                if (score <= 0.7) return 'score-medium';
                 return 'score-high';
               };
               const scoreLevel = getScoreLevel(dimensionScore);
-              
+              // Tab disabilitato se abilitato ma senza evidenze
+              const isTabDisabled = isEnabled && evidenceCount === 0;
+              if (!isEnabled) return null;
               return (
                 <div key={dimensionId} className="tab-button-wrapper">
-                  {/* Dimension score above tab */}
-                  <div className={`dimension-score-above ${scoreLevel} ${!isEnabled ? 'disabled' : ''}`}>
-                    {isEnabled ? `${Math.round(dimensionScore * 100)}%` : '--'}
-                  </div>
+                  <div className={`dimension-score-above ${scoreLevel} }`}>{Math.round(dimensionScore * 100)}%</div>
                   <button
-                    className={`tab-button ${activeTab === dimensionId ? 'active' : ''} ${!isEnabled ? 'disabled' : ''}`}
-                    onClick={() => setActiveTab(dimensionId)}
-                    title={`${dimensionInfo.name}${!isEnabled ? ' (disabled)' : ''}`}
-                    disabled={!isEnabled}
+                    className={`tab-button ${activeTab === dimensionId ? 'active' : ''} ${isTabDisabled ? 'disabled' : ''}`}
+                    onClick={() => !isTabDisabled && setActiveTab(dimensionId)}
+                    title={dimensionInfo.name + (isTabDisabled ? ' (no evidence)' : '')}
+                    disabled={isTabDisabled}
                   >
                     <Icon size={16} />
                     <span className="tab-text">{dimensionInfo.name}</span>
-                    {isEnabled && evidenceCount > 0 && (
-                      <span className="evidence-badge">{evidenceCount}</span>
-                    )}
+                    {evidenceCount > 0 && <span className="evidence-badge">{evidenceCount}</span>}
                   </button>
                 </div>
               );

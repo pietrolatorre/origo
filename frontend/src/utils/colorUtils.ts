@@ -11,9 +11,9 @@ export type ScoreLevel = 'low' | 'medium' | 'high';
  * @returns Color level: 'low' (green), 'medium' (yellow), 'high' (red)
  */
 export const getScoreLevel = (score: number): ScoreLevel => {
-  if (score <= 0.3) return 'low';      // Green - Natural range (0-30%)
-  if (score <= 0.6) return 'medium';   // Yellow - Moderate suspicion (31-60%)
-  return 'high';                       // Red - High suspicion (61-100%)
+  if (score <= 0.5) return 'low';      // Green - Natural range (0-50%)
+  if (score <= 0.7) return 'medium';   // Yellow - Moderate suspicion (51-70%)
+  return 'high';                       // Red - High suspicion (71-100%)
 };
 
 /**
